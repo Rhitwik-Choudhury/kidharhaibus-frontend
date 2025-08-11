@@ -2,49 +2,53 @@
 import axios from 'axios';
 
 /**
- * Resolve the backend URL depending on where the app runs:
- * - On localhost: prefer REACT_APP_BACKEND_URL, fallback to http://localhost:5000
- * - On LAN devices (phone): use your machine's LAN IP (so the phone can reach it)
- * - In production (Netlify, etc.): set REACT_APP_BACKEND_URL to your API host (https://api.yourdomain.com)
+ * Resolve the backend *origin* for cases where REACT_APP_API_URL is not provided.
+ * This is mainly useful for local/LAN testing on phones in the same Wi-Fi.
  *
- * NOTE: For CRA + Netlify, we now FIRST prefer REACT_APP_API_URL (which should already include /api).
- * If that's not set, we compute from REACT_APP_BACKEND_URL or local/LAN as before and then append /api.
+ * Behavior:
+ * - On localhost: prefer REACT_APP_BACKEND_URL (if you set it), else http://localhost:<port>
+ * - On non-localhost (e.g., your phone hitting the dev machine): prefer REACT_APP_BACKEND_URL,
+ *   else fall back to your machine's LAN IP (so the phone can reach it)
  */
 const resolveBackendURL = () => {
-  const localIP = '192.168.29.190'; // your laptop's LAN IP (used for mobile testing on same Wi-Fi)
+  const localIP = '192.168.29.190'; // your laptop's LAN IP for phone testing
   const port = '5000';
 
-  // If running in localhost dev tab
+  // If running in a localhost tab (CRA dev server)
   if (window.location.hostname === 'localhost') {
     return process.env.REACT_APP_BACKEND_URL || `http://localhost:${port}`;
   }
 
-  // Otherwise (e.g., phone hitting your dev laptop, or any non-localhost), use LAN IP unless overridden by env
+  // Otherwise (e.g., device on LAN hitting your machine)
   return process.env.REACT_APP_BACKEND_URL || `http://${localIP}:${port}`;
 };
 
-// Prefer a direct API base if provided (recommended for Netlify builds)
-const DIRECT_API_BASE = process.env.REACT_APP_API_URL; // e.g., https://<railway-domain>/api
-
-// Fallback: compute from backend origin and append /api
-const BACKEND_URL = resolveBackendURL();
+/**
+ * Preferred way for CRA + Netlify:
+ *   REACT_APP_API_URL = https://<railway-domain>/api
+ * If that is set, we use it directly.
+ * If not set (e.g., local/LAN testing), we compute BACKEND_URL and append "/api".
+ */
+const DIRECT_API_BASE = process.env.REACT_APP_API_URL; // e.g., https://kidharhaibus-backend-production.up.railway.app/api
+const BACKEND_URL = resolveBackendURL();                // e.g., http://localhost:5000  OR  http://192.168.x.x:5000
 const API_BASE = DIRECT_API_BASE || `${BACKEND_URL}/api`;
 
 /**
- * Shared axios client with:
- * - Base URL set to /api
- * - 10s timeout
- * - JSON headers
- * - Token injection via request interceptor
- * - 401 handler in response interceptor
+ * Shared Axios instance for all REST calls.
+ * - baseURL: points at "/api"
+ * - timeout: raised to 30s because email OTP can take >10s sometimes
+ * - headers: JSON by default
+ * - request interceptor: injects Bearer token when present
+ * - response interceptor: central 401 handling → clears session and redirects to home
  */
 const apiClient = axios.create({
   baseURL: API_BASE,
-  timeout: 10000,
+  timeout: 30000, // was 10000 — bumped to avoid OTP timeouts
   headers: { 'Content-Type': 'application/json' },
+  // withCredentials: false, // default; set true only if you use cookies
 });
 
-// Inject JWT from localStorage if present
+// Inject JWT from localStorage if present (Authorization: Bearer <token>)
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('kidharhaibus_token');
@@ -56,7 +60,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Global 401 handler: clear session and bounce to home
+// Global 401 handler: clear session and bounce to "/"
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -71,8 +75,8 @@ apiClient.interceptors.response.use(
 );
 
 /**
- * Helper: map a UI role -> router base used by your backend
- * This aligns with your existing mounts:
+ * Helper: map UI role → router base used by your backend.
+ * Matches your Express mounts:
  *   app.use('/api/parent', parentRoutes)
  *   app.use('/api/school', schoolRoutes)
  *   app.use('/api/driver', driverRoutes)
@@ -91,12 +95,11 @@ const roleBase = (role) => {
 };
 
 /* =========================
- *         AUTH API
+ *           AUTH API
  * =========================
  * OTP endpoints live under /api/auth/*
- * Sign up / Sign in use role-scoped routers to match your backend:
- *   POST /api/parent/signup
- *   POST /api/parent/login
+ * Sign up / Sign in are role-scoped:
+ *   POST /api/parent/signup, /api/parent/login
  *   POST /api/school/signup
  *   POST /api/driver/signup
  */
@@ -105,7 +108,7 @@ export const authAPI = {
   sendOTP: (email) => apiClient.post('/auth/send-otp', { email }),
   verifyOTP: (email, otp) => apiClient.post('/auth/verify-otp', { email, otp }),
 
-  // Role-scoped signup/login (Option B)
+  // Role-scoped signup/login
   signUp: (userData, role) => apiClient.post(`${roleBase(role)}/signup`, userData),
   signIn: (email, password, role) =>
     apiClient.post(`${roleBase(role)}/login`, { email, password }),
@@ -116,13 +119,13 @@ export const authAPI = {
 };
 
 /* =========================
- *       STUDENTS API
+ *         STUDENTS API
  * ========================= */
 export const studentsAPI = {
   getStudents: (params = {}) => apiClient.get('/school/students', { params }),
   getStudent: (studentId) => apiClient.get(`/school/students/${studentId}`),
 
-  // When creating a student, include the schoolId from the logged-in school user
+  // Include the schoolId from the logged-in school user
   createStudent: (studentData) => {
     const user = JSON.parse(localStorage.getItem('kidharhaibus_user'));
     const schoolId = user?._id || user?.id;
@@ -139,7 +142,7 @@ export const studentsAPI = {
 };
 
 /* =========================
- *        BUSES API
+ *           BUSES API
  * ========================= */
 export const busesAPI = {
   getBuses: (params = {}) => apiClient.get('/buses', { params }),
@@ -152,7 +155,7 @@ export const busesAPI = {
 };
 
 /* =========================
- *        ROUTES API
+ *           ROUTES API
  * ========================= */
 export const routesAPI = {
   getRoutes: (params = {}) => apiClient.get('/routes', { params }),
@@ -165,7 +168,7 @@ export const routesAPI = {
 };
 
 /* =========================
- *         TRIPS API
+ *            TRIPS API
  * ========================= */
 export const tripsAPI = {
   getTrips: (params = {}) => apiClient.get('/trips', { params }),
@@ -179,7 +182,7 @@ export const tripsAPI = {
 };
 
 /* =========================
- *         ALERTS API
+ *            ALERTS API
  * ========================= */
 export const alertsAPI = {
   getAlerts: (params = {}) => apiClient.get('/alerts', { params }),
@@ -195,7 +198,9 @@ export const alertsAPI = {
 };
 
 /**
- * Normalized error to a human-readable string
+ * Normalize any Axios error to a human-readable string.
+ * - prefer backend-provided { detail } or { message }
+ * - fall back to generic error.message
  */
 export const handleAPIError = (error) => {
   if (error.response?.data?.detail) return error.response.data.detail;
