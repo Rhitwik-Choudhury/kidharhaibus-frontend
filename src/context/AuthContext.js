@@ -106,33 +106,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // --- FIXED: use env-aware API client instead of hardcoded localhost ---
   const sendOTP = async (email) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
-      return data;
+      const { data } = await authAPI.sendOTP(email);
+      return data; // { message, ... }
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(handleAPIError(error));
     }
   };
 
+  // --- FIXED: use env-aware API client instead of hardcoded localhost ---
   const verifyOTP = async (email, otp) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'OTP verification failed');
-      return true;
+      const { data } = await authAPI.verifyOTP(email, otp);
+      // your backend likely returns { success: true } or similar
+      return data?.success ?? true;
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(handleAPIError(error));
     }
   };
 
