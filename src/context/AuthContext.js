@@ -10,6 +10,27 @@ export const useAuth = () => {
   return context;
 };
 
+/**
+ * Helper: extract {user, token} from various possible backend shapes.
+ * Supports: { user }, { school }, { parent }, { driver }, { createdUser }, { newUser }, { data: { user } }
+ * Token: { token } | { accessToken } | { data: { token } }
+ */
+const extractUserAndToken = (resp) => {
+  const d = resp?.data ?? resp ?? {};
+  const user =
+    d.user ||
+    d.createdUser ||
+    d.newUser ||
+    d.school ||
+    d.parent ||
+    d.driver ||
+    d.data?.user;
+
+  const token = d.token || d.accessToken || d.data?.token || '';
+
+  return { user, token, raw: d };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
@@ -34,7 +55,7 @@ export const AuthProvider = ({ children }) => {
           setUser(normalizedUser);
           setUserRole(storedRole);
           setToken(storedToken);
-          console.log("User in AuthContext:", normalizedUser);
+          console.log('User in AuthContext:', normalizedUser);
         } catch (error) {
           localStorage.removeItem('kidharhaibus_user');
           localStorage.removeItem('kidharhaibus_role');
@@ -47,10 +68,22 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
+  /**
+   * Login:
+   * - Accepts any response shape via extractUserAndToken
+   * - Normalizes id/_id
+   * - Stores token only if present
+   */
   const login = async (email, password, role) => {
     try {
       const response = await authAPI.signIn(email, password, role);
-      const { user: userData, token } = response.data;
+      const { user: userData, token, raw } = extractUserAndToken(response);
+
+      if (!userData) {
+        // Avoids "reading 'id' of undefined"
+        const msg = raw?.message || 'Login failed: server did not return a user.';
+        throw new Error(msg);
+      }
 
       const normalizedUser = {
         ...userData,
@@ -59,20 +92,36 @@ export const AuthProvider = ({ children }) => {
 
       setUser(normalizedUser);
       setUserRole(role);
-      setToken(token);
+      setToken(token || '');
       localStorage.setItem('kidharhaibus_user', JSON.stringify(normalizedUser));
       localStorage.setItem('kidharhaibus_role', role);
-      localStorage.setItem('kidharhaibus_token', token);
+      if (token) localStorage.setItem('kidharhaibus_token', token);
+
       return { success: true, user: normalizedUser };
     } catch (error) {
       throw new Error(handleAPIError(error));
     }
   };
 
+  /**
+   * Signup:
+   * - Accepts any response shape via extractUserAndToken
+   * - Normalizes id/_id
+   * - Stores token only if present
+   *
+   * This specifically fixes the "Cannot read properties of undefined (reading 'id')"
+   * error you saw when the backend returned { school: {...} } instead of { user: {...} }.
+   */
   const signup = async (userData, role) => {
     try {
       const response = await authAPI.signUp(userData, role);
-      const { user: newUser, token } = response.data;
+      const { user: newUser, token, raw } = extractUserAndToken(response);
+
+      if (!newUser) {
+        // Avoids undefined access if backend didn't return a "user" key
+        const msg = raw?.message || 'Sign up failed: server did not return a user.';
+        throw new Error(msg);
+      }
 
       const normalizedUser = {
         ...newUser,
@@ -81,10 +130,11 @@ export const AuthProvider = ({ children }) => {
 
       setUser(normalizedUser);
       setUserRole(role);
-      setToken(token);
+      setToken(token || '');
       localStorage.setItem('kidharhaibus_user', JSON.stringify(normalizedUser));
       localStorage.setItem('kidharhaibus_role', role);
-      localStorage.setItem('kidharhaibus_token', token);
+      if (token) localStorage.setItem('kidharhaibus_token', token);
+
       return { success: true, user: normalizedUser };
     } catch (error) {
       throw new Error(handleAPIError(error));
@@ -106,7 +156,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- FIXED: use env-aware API client instead of hardcoded localhost ---
+  // --- Use env-aware API client for OTP ---
   const sendOTP = async (email) => {
     try {
       const { data } = await authAPI.sendOTP(email);
@@ -116,7 +166,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- FIXED: use env-aware API client instead of hardcoded localhost ---
+  // --- Use env-aware API client for OTP verification ---
   const verifyOTP = async (email, otp) => {
     try {
       const { data } = await authAPI.verifyOTP(email, otp);
