@@ -11,9 +11,9 @@ export const useAuth = () => {
 };
 
 /**
- * Helper: extract {user, token} from various possible backend shapes.
+ * Extract { user, token } from different backend shapes.
  * Supports: { user }, { school }, { parent }, { driver }, { createdUser }, { newUser }, { data: { user } }
- * Token: { token } | { accessToken } | { data: { token } }
+ * Token supports: { token }, { accessToken }, { data: { token } }
  */
 const extractUserAndToken = (resp) => {
   const d = resp?.data ?? resp ?? {};
@@ -27,7 +27,6 @@ const extractUserAndToken = (resp) => {
     d.data?.user;
 
   const token = d.token || d.accessToken || d.data?.token || '';
-
   return { user, token, raw: d };
 };
 
@@ -46,17 +45,12 @@ export const AuthProvider = ({ children }) => {
       if (storedUser && storedRole && storedToken) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          // Normalize _id to id if needed
-          const normalizedUser = {
-            ...parsedUser,
-            id: parsedUser.id || parsedUser._id,
-          };
-
+          const normalizedUser = { ...parsedUser, id: parsedUser.id || parsedUser._id };
           setUser(normalizedUser);
           setUserRole(storedRole);
           setToken(storedToken);
           console.log('User in AuthContext:', normalizedUser);
-        } catch (error) {
+        } catch {
           localStorage.removeItem('kidharhaibus_user');
           localStorage.removeItem('kidharhaibus_role');
           localStorage.removeItem('kidharhaibus_token');
@@ -68,27 +62,17 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  /**
-   * Login:
-   * - Accepts any response shape via extractUserAndToken
-   * - Normalizes id/_id
-   * - Stores token only if present
-   */
+  /** Login keeps requiring a user in the response */
   const login = async (email, password, role) => {
     try {
       const response = await authAPI.signIn(email, password, role);
       const { user: userData, token, raw } = extractUserAndToken(response);
 
       if (!userData) {
-        // Avoids "reading 'id' of undefined"
-        const msg = raw?.message || 'Login failed: server did not return a user.';
-        throw new Error(msg);
+        throw new Error(raw?.message || 'Login failed: server did not return a user.');
       }
 
-      const normalizedUser = {
-        ...userData,
-        id: userData.id || userData._id,
-      };
+      const normalizedUser = { ...userData, id: userData.id || userData._id };
 
       setUser(normalizedUser);
       setUserRole(role);
@@ -105,37 +89,36 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Signup:
-   * - Accepts any response shape via extractUserAndToken
-   * - Normalizes id/_id
-   * - Stores token only if present
-   *
-   * This specifically fixes the "Cannot read properties of undefined (reading 'id')"
-   * error you saw when the backend returned { school: {...} } instead of { user: {...} }.
+   * - If backend returns a user, we store it (auto-login path).
+   * - If backend returns only a message (e.g., "School registered successfully") with NO user,
+   *   we treat it as success (createdOnly) and DO NOT throw.
    */
   const signup = async (userData, role) => {
     try {
       const response = await authAPI.signUp(userData, role);
       const { user: newUser, token, raw } = extractUserAndToken(response);
 
-      if (!newUser) {
-        // Avoids undefined access if backend didn't return a "user" key
-        const msg = raw?.message || 'Sign up failed: server did not return a user.';
-        throw new Error(msg);
+      // Auto-login path (user present)
+      if (newUser) {
+        const normalizedUser = { ...newUser, id: newUser.id || newUser._id };
+
+        setUser(normalizedUser);
+        setUserRole(role);
+        setToken(token || '');
+        localStorage.setItem('kidharhaibus_user', JSON.stringify(normalizedUser));
+        localStorage.setItem('kidharhaibus_role', role);
+        if (token) localStorage.setItem('kidharhaibus_token', token);
+
+        return { success: true, user: normalizedUser, message: raw?.message };
       }
 
-      const normalizedUser = {
-        ...newUser,
-        id: newUser.id || newUser._id,
+      // Created-only path (no user returned by backend)
+      return {
+        success: true,
+        user: null,
+        createdOnly: true,
+        message: raw?.message || 'Account created',
       };
-
-      setUser(normalizedUser);
-      setUserRole(role);
-      setToken(token || '');
-      localStorage.setItem('kidharhaibus_user', JSON.stringify(normalizedUser));
-      localStorage.setItem('kidharhaibus_role', role);
-      if (token) localStorage.setItem('kidharhaibus_token', token);
-
-      return { success: true, user: normalizedUser };
     } catch (error) {
       throw new Error(handleAPIError(error));
     }
@@ -144,8 +127,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authAPI.logout();
-    } catch (error) {
-      // Ignore logout errors
+    } catch {
+      // ignore
     } finally {
       setUser(null);
       setUserRole(null);
@@ -156,21 +139,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- Use env-aware API client for OTP ---
+  // OTP helpers (use env-aware api client)
   const sendOTP = async (email) => {
     try {
       const { data } = await authAPI.sendOTP(email);
-      return data; // { message, ... }
+      return data;
     } catch (error) {
       throw new Error(handleAPIError(error));
     }
   };
 
-  // --- Use env-aware API client for OTP verification ---
   const verifyOTP = async (email, otp) => {
     try {
       const { data } = await authAPI.verifyOTP(email, otp);
-      // your backend likely returns { success: true } or similar
       return data?.success ?? true;
     } catch (error) {
       throw new Error(handleAPIError(error));

@@ -99,94 +99,82 @@ const SignUpForm = ({ role }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: 'Password Mismatch',
-        description: 'Passwords do not match. Please try again.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  if (formData.password !== formData.confirmPassword) {
+    toast({
+      title: 'Password Mismatch',
+      description: 'Passwords do not match. Please try again.',
+      variant: 'destructive',
+    });
+    return;
+  }
 
-    if (!otpSent) {
-      toast({
-        title: 'Verify Email',
-        description: 'Please verify your email first.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  if (!otpSent) {
+    toast({
+      title: 'Verify Email',
+      description: 'Please verify your email first.',
+      variant: 'destructive',
+    });
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const isOtpValid = await verifyOTP(formData.email, otp);
-      if (!isOtpValid) throw new Error('Invalid OTP');
+  try {
+    const isOtpValid = await verifyOTP(formData.email, otp);
+    if (!isOtpValid) throw new Error('Invalid OTP');
 
-      // base payload
-      let userData = {
-        email: formData.email,
-        password: formData.password,
-      };
+    // base payload
+    let userData = { email: formData.email, password: formData.password };
 
-      // role-specific fields
-      switch (role) {
-        case 'parent': {
-          // ✅ Backend expects fullName, not name
-          userData.fullName = formData.fullName;
-
-          // optional demo fallback for MVP
-          const finalCode =
-            (formData.studentCode && formData.studentCode.trim()) || DEMO_STUDENT_CODE;
-          userData.studentCode = finalCode;
-          userData.children = [];
-
-          // reflect auto-fill in the input if it was blank
-          if (!formData.studentCode?.trim()) {
-            setFormData((prev) => ({ ...prev, studentCode: finalCode }));
-          }
-          break;
+    // role-specific fields
+    switch (role) {
+      case 'parent': {
+        userData.fullName = formData.fullName;
+        const finalCode =
+          (formData.studentCode && formData.studentCode.trim()) || DEMO_STUDENT_CODE;
+        userData.studentCode = finalCode;
+        userData.children = [];
+        if (!formData.studentCode?.trim()) {
+          setFormData((prev) => ({ ...prev, studentCode: finalCode }));
         }
-        case 'school': {
-          userData.schoolName = formData.schoolName;
-          userData.adminName = formData.adminName;
-          break;
-        }
-        case 'driver': {
-          // ✅ driver already uses fullName in your backend
-          userData.fullName = formData.fullName;
-          userData.driverCode = formData.driverCode;
-          break;
-        }
-        default:
-          break;
+        break;
       }
-
-      // Create the account
-      await signup(userData, role);
-
-      // Optional: clear any auto-login from signup so user explicitly signs in
-      await logout();
-
-      // ✅ Show success + send to sign-in page (your requested message)
-      toast({
-        title: 'Account created successfully',
-        description: 'You may sign in now.',
-      });
-
-      navigate(`/auth/${role}/signin`, { replace: true });
-    } catch (error) {
-      toast({
-        title: 'Sign Up Failed',
-        description: error.message || 'Failed to create account. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+      case 'school': {
+        userData.schoolName = formData.schoolName;
+        userData.adminName = formData.adminName;
+        break;
+      }
+      case 'driver': {
+        userData.fullName = formData.fullName;
+        userData.driverCode = formData.driverCode;
+        break;
+      }
+      default:
+        break;
     }
-  };
+
+    // Create account (AuthContext now resolves even if no user is returned)
+    const res = await signup(userData, role);
+
+    toast({
+      title: 'Account created successfully',
+      description: res?.message || 'You may sign in now.',
+    });
+
+    navigate(`/auth/${role}/signin`, { replace: true });
+  } catch (error) {
+    toast({
+      title: 'Sign Up Failed',
+      description: error.message || 'Failed to create account. Please try again.',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
