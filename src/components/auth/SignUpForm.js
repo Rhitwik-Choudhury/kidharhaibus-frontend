@@ -31,7 +31,8 @@ const SignUpForm = ({ role }) => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
 
-  const { signup, sendOTP, verifyOTP } = useAuth();
+  // ⬇️ include logout so we can send them to sign-in cleanly
+  const { signup, sendOTP, verifyOTP, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -163,15 +164,19 @@ const SignUpForm = ({ role }) => {
           break;
       }
 
+      // Create the account
       await signup(userData, role);
 
+      // Optional: clear any auto-login from signup so user explicitly signs in
+      await logout();
+
+      // ✅ Show success + send to sign-in page (your requested message)
       toast({
-        title: 'Account Created!',
-        description:
-          'Welcome to KidharHaiBus. Your account has been created successfully.',
+        title: 'Account created successfully',
+        description: 'You may sign in now.',
       });
 
-      navigate(config.dashboard);
+      navigate(`/auth/${role}/signin`, { replace: true });
     } catch (error) {
       toast({
         title: 'Sign Up Failed',
@@ -195,8 +200,8 @@ const SignUpForm = ({ role }) => {
             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
               type="text"
-              name="fullName"                 
-              value={formData.fullName}       
+              name="fullName"
+              value={formData.fullName}
               onChange={handleInputChange}
               placeholder="Enter your full name"
               required
