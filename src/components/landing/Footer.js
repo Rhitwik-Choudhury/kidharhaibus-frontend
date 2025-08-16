@@ -45,7 +45,7 @@ const Footer = () => {
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-2 mb-6">
               <Bus className="h-8 w-8 text-blue-400" />
-              <span className="text-2xl font-bold">KidharHaiBus</span>
+              <span className="text-2xl font-bold">Trackify</span>
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed">
               Making school transportation safer, smarter, and more reliable for parents, 
@@ -60,7 +60,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-400">support@kidharhaibus.com</span>
+                <span className="text-gray-400">support@trackify.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-blue-400" />
@@ -169,7 +169,7 @@ const Footer = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="md:flex md:items-center md:justify-between">
             <div className="text-gray-400 text-sm">
-              © 2025 KidharHaiBus. All rights reserved. Built with ❤️ in India.
+              © 2025 Trackify. All rights reserved. Built with ❤️ in India.
             </div>
             
             {/* Social media links */}

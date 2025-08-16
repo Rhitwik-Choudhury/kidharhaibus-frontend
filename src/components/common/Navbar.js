@@ -34,7 +34,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-2">
             <Bus className="h-6 w-6 text-black" />
             <span className="text-xl font-bold text-black">
-              KidharHaiBus
+              Trackify
             </span>
           </div>
 

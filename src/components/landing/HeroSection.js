@@ -25,7 +25,7 @@ const HeroSection = () => {
           {/* Main heading with animation */}
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight animate-fade-in">
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              KidharHaiBus
+              Trackify
             </span>
           </h1>
 
