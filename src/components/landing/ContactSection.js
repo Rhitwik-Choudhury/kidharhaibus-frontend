@@ -4,10 +4,10 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { useToast } from '../../hooks/use-toast';
-import { 
-  Phone, 
-  Mail, 
-  MapPin, 
+import {
+  Phone,
+  Mail,
+  MapPin,
   Clock,
   Facebook,
   Twitter,
@@ -15,35 +15,57 @@ import {
   Instagram
 } from 'lucide-react';
 
+const API_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) ||
+  'http://localhost:5000';
+
 const ContactSection = () => {
   const [formData, setFormData] = useState({
     name: '',
-    mobile: '',
+    email: '',
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Mock form submission
-    setTimeout(() => {
-      toast({
-        title: "Message Sent!",
-        description: "Thank you for contacting us. We'll get back to you within 24 hours.",
+    try {
+      const res = await fetch(`${API_URL}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
-      setFormData({ name: '', mobile: '', message: '' });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || 'Failed to send message');
+      }
+
+      toast({
+        title: 'Message Sent!',
+        description: "Thank you for contacting us. We'll get back to you within 24 hours."
+      });
+      setFormData({ name: '', email: '', message: '' });
+    } catch (err) {
+      toast({
+        title: 'Could not send message',
+        description: err.message || 'Please try again later.',
+        variant: 'destructive'
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   const contactInfo = [
@@ -56,7 +78,7 @@ const ContactSection = () => {
     {
       icon: Mail,
       title: 'Email Us',
-      details: 'support@kidharhaibus.com',
+      details: 'kidharhaibus@gmail.com',
       subtitle: 'We reply within 24 hours'
     },
     {
@@ -88,8 +110,8 @@ const ContactSection = () => {
             Get In Touch
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Have questions about KidharHaiBus? Want to schedule a demo? 
-            We're here to help you ensure every child's journey is safe and tracked.
+            Have questions about Trackify? Want to schedule a demo? We&apos;re
+            here to help you ensure every child&apos;s journey is safe and tracked.
           </p>
         </div>
 
@@ -101,7 +123,7 @@ const ContactSection = () => {
                 Send us a Message
               </CardTitle>
               <p className="text-gray-600">
-                Fill out the form below and we'll get back to you as soon as possible.
+                Fill out the form below and we&apos;ll get back to you as soon as possible.
               </p>
             </CardHeader>
             <CardContent>
@@ -123,14 +145,14 @@ const ContactSection = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mobile Number *
+                    Email Address *
                   </label>
                   <Input
-                    type="tel"
-                    name="mobile"
-                    value={formData.mobile}
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="+91 9876543210"
+                    placeholder="your@email.com"
                     required
                     className="h-12 border-2 border-gray-200 focus:border-blue-500 transition-colors"
                   />
@@ -168,7 +190,10 @@ const ContactSection = () => {
               {contactInfo.map((info, index) => {
                 const Icon = info.icon;
                 return (
-                  <Card key={index} className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  <Card
+                    key={index}
+                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
                     <CardContent className="p-6 text-center">
                       <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Icon className="w-8 h-8 text-blue-600" />
@@ -188,7 +213,9 @@ const ContactSection = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <MapPin className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Visit Our Office</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      Visit Our Office
+                    </h3>
                     <p className="text-gray-600">Interactive map coming soon</p>
                   </div>
                 </div>

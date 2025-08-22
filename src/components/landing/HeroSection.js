@@ -35,7 +35,7 @@ const HeroSection = () => {
           </p>
 
           {/* Description */}
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed animate-slide-up delay-200">
+          <p className="relative z-10 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             Stay connected to your child's journey in real-time. Our smart tracking system ensures 
             peace of mind for parents, efficiency for schools, and safety for every child on the road.
           </p>
