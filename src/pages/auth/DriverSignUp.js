@@ -5,11 +5,11 @@ import SignUpForm from '../../components/auth/SignUpForm';
 const DriverSignUp = () => {
   return (
     <AuthLayout
-      role="driver"
-      title="Driver Sign Up"
-      subtitle="Join as a driver to manage your trips efficiently"
+      role="school"
+      title="Add Driver"
+      subtitle="Create a driver under your school"
     >
-      <SignUpForm role="driver" />
+      <SignUpForm role="driver" isDashboard={true} />  {/* ✅ ADD THIS */}
     </AuthLayout>
   );
 };

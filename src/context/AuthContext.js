@@ -1,4 +1,3 @@
-// src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI, handleAPIError } from '../services/api';
 
@@ -10,11 +9,6 @@ export const useAuth = () => {
   return context;
 };
 
-/**
- * Extract { user, token } from different backend shapes.
- * Supports: { user }, { school }, { parent }, { driver }, { createdUser }, { newUser }, { data: { user } }
- * Token supports: { token }, { accessToken }, { data: { token } }
- */
 const extractUserAndToken = (resp) => {
   const d = resp?.data ?? resp ?? {};
   const user =
@@ -62,7 +56,6 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  /** Login keeps requiring a user in the response */
   const login = async (email, password, role) => {
     try {
       const response = await authAPI.signIn(email, password, role);
@@ -87,18 +80,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Signup:
-   * - If backend returns a user, we store it (auto-login path).
-   * - If backend returns only a message (e.g., "School registered successfully") with NO user,
-   *   we treat it as success (createdOnly) and DO NOT throw.
-   */
   const signup = async (userData, role) => {
     try {
       const response = await authAPI.signUp(userData, role);
       const { user: newUser, token, raw } = extractUserAndToken(response);
 
-      // Auto-login path (user present)
       if (newUser) {
         const normalizedUser = { ...newUser, id: newUser.id || newUser._id };
 
@@ -112,7 +98,6 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: normalizedUser, message: raw?.message };
       }
 
-      // Created-only path (no user returned by backend)
       return {
         success: true,
         user: null,
@@ -139,7 +124,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // OTP helpers (use env-aware api client)
   const sendOTP = async (email) => {
     try {
       const { data } = await authAPI.sendOTP(email);

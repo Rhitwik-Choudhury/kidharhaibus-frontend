@@ -1,81 +1,73 @@
-// src/pages/drivers/DriverDashboard.js
-/**
- * DriverDashboard
- * ---------------
- * - Start/end a trip and continuously stream GPS using geolocation.watchPosition
- * - Emits socket events:
- *      • 'trip:start' exactly once when starting (and NOT again on refresh)
- *      • 'driverLocation' on each position update
- *      • 'trip:end' exactly once when ending
- * - Shows a tri-lingual banner: “Don't close this tab or lock your phone”
- * - Persists "trip active" across reloads (localStorage)
- * - Optional: requests a Wake Lock to keep the screen on (while the tab is open)
- * - Applies your desktop correction offset when the screen is "large"
- */
+import { useState, useEffect, useRef } from "react";
+import socket from "../../lib/socket";
+import TripLockWarning from "./TripLockWarning";
+import { useAuth } from "../../context/AuthContext";
+import { handleAPIError } from "../../services/api";
+import axios from "axios";
 
-import { useState, useEffect, useRef } from 'react';
-import socket from '../../lib/socket';
-import TripLockWarning from './TripLockWarning';
-
-const STORAGE_KEY = 'khb_trip_active';
+const STORAGE_KEY = "khb_trip_active";
 
 const DriverDashboard = () => {
-  // Initialize from localStorage so refresh keeps the banner visible
-  const [tripStarted, setTripStarted] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === '1'
-  );
-  const [location, setLocation] = useState(null); // { latitude, longitude, timestamp }
+  const { user } = useAuth();
 
-  // Geolocation watcher id
+  const [driverData, setDriverData] = useState({
+    driverId: user?.id || user?._id || null,
+    busId: null,
+    fullName: user?.fullName || "",
+  });
+
+  const [busInfo, setBusInfo] = useState(null);
+  const [tripStarted, setTripStarted] = useState(
+    () => localStorage.getItem(STORAGE_KEY) === "1"
+  );
+  const [location, setLocation] = useState(null);
+  const [error, setError] = useState("");
   const watchIdRef = useRef(null);
 
-  // Wake Lock (optional – keeps screen from sleeping while tab is visible)
-  const wakeLockRef = useRef(null);
-  const visListenerRef = useRef(null);
-
-  /** -------------------------
-   * Wake Lock helpers (optional)
-   * --------------------------*/
-  const requestWakeLock = async () => {
+  // ================= FETCH DRIVER BUS =================
+  const fetchDriverBus = async () => {
     try {
-      if ('wakeLock' in navigator) {
-        // Request a screen wake lock
-        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      const token = localStorage.getItem("kidharhaibus_token");
 
-        // If the tab goes to background and comes back, re-request
-        visListenerRef.current = async () => {
-          if (document.visibilityState === 'visible' && !wakeLockRef.current) {
-            try {
-              wakeLockRef.current = await navigator.wakeLock.request('screen');
-            } catch {
-              /* ignore */
-            }
-          }
-        };
-        document.addEventListener('visibilitychange', visListenerRef.current);
-      }
-    } catch {
-      // Wake Lock is best-effort; we quietly ignore errors
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL || "http://localhost:5000/api"}/driver/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const driver = res.data?.driver;
+
+      if (!driver) return;
+
+      const bus = driver.busId;
+
+      setDriverData({
+        driverId: driver._id,
+        busId: bus?._id || null,
+        fullName: driver.fullName,
+      });
+
+      setBusInfo(bus || null);
+
+      // 🔥 also update localStorage (important)
+      const updatedUser = {
+        ...user,
+        busId: bus?._id || null,
+      };
+      localStorage.setItem("kidharhaibus_user", JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error("Failed to fetch driver bus:", err);
     }
   };
 
-  const releaseWakeLock = () => {
-    try {
-      wakeLockRef.current?.release();
-    } catch {
-      /* ignore */
-    }
-    wakeLockRef.current = null;
+  useEffect(() => {
+    fetchDriverBus();
+  }, []);
 
-    if (visListenerRef.current) {
-      document.removeEventListener('visibilitychange', visListenerRef.current);
-      visListenerRef.current = null;
-    }
-  };
-
-  /** -------------------------
-   * Geolocation helpers
-   * --------------------------*/
+  // ================= STOP WATCH =================
   const stopWatching = () => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
@@ -83,124 +75,165 @@ const DriverDashboard = () => {
     }
   };
 
-  // Start the geolocation stream. If announce=true, emit 'trip:start' once.
+  // ================= START TRACKING =================
   const startWatching = ({ announce } = { announce: true }) => {
+    const { driverId, busId } = driverData;
+
     if (!navigator.geolocation) {
-      console.error('Geolocation is not supported by this browser.');
+      setError("Geolocation is not supported.");
       return;
     }
 
-    // Mark trip active and persist
-    setTripStarted(true);
-    localStorage.setItem(STORAGE_KEY, '1');
-
-    // Only the first, user-initiated start should announce to everyone
-    if (announce) {
-      socket.emit('trip:start', { by: 'driver', timestamp: Date.now() });
+    if (!driverId) {
+      setError("Driver not found.");
+      return;
     }
 
-    // Optional: keep the screen awake while tab is open
-    requestWakeLock();
+    if (!busId) {
+      setError("No bus assigned.");
+      return;
+    }
 
-    // Apply your desktop correction if the viewport is wide
-    const isPC = window.innerWidth > 768;
+    setError("");
+    setTripStarted(true);
+    localStorage.setItem(STORAGE_KEY, "1");
 
-    // Start continuous location updates
+    if (announce) {
+      socket.emit("trip:start", { driverId, busId });
+    }
+
     if (watchIdRef.current === null) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         (position) => {
-          let { latitude, longitude } = position.coords;
+          const { latitude, longitude } = position.coords;
 
-          // Optional: correct desktop offset
-          if (isPC) {
-            latitude = latitude - 0.0046582;
-            longitude = longitude - 0.0051996;
-          }
+          const updatedLocation = {
+            driverId,
+            busId,
+            lat: latitude,
+            lng: longitude,
+          };
 
-          const updatedLocation = { latitude, longitude, timestamp: Date.now() };
           setLocation(updatedLocation);
 
-          // Push to the server; it will broadcast 'locationUpdate'
-          socket.emit('driverLocation', updatedLocation);
+          socket.emit("driverLocation", updatedLocation);
         },
-        (error) => {
-          console.error('❌ Error tracking location:', error);
+        (err) => {
+          console.error(err);
+          setError("Location error");
         },
-        {
-          enableHighAccuracy: true, // best accuracy when available
-          maximumAge: 1000,         // reuse a fix up to 1s old
-          timeout: 10000,           // give up if no fix in 10s
-        }
+        { enableHighAccuracy: true }
       );
     }
   };
 
   const handleStartTrip = () => {
-    // Real user intent – announce start to everyone
     startWatching({ announce: true });
   };
 
   const handleEndTrip = () => {
-    // Announce end once
-    socket.emit('trip:end', { by: 'driver', timestamp: Date.now() });
+    const { driverId, busId } = driverData;
 
-    // Stop tracking + clear UI
+    if (driverId && busId) {
+      socket.emit("trip:end", { driverId, busId });
+    }
+
     stopWatching();
-    releaseWakeLock();
-    setLocation(null);
-
-    // Clear "trip active"
     setTripStarted(false);
+    setLocation(null);
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  // On mount: if a trip was active before a refresh, resume tracking
-  // without re-announcing 'trip:start'.
+  // ================= RESUME TRIP =================
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY) === '1' && watchIdRef.current === null) {
+    if (
+      localStorage.getItem(STORAGE_KEY) === "1" &&
+      driverData.driverId &&
+      driverData.busId
+    ) {
       startWatching({ announce: false });
     }
-    // Cleanup on unmount
-    return () => {
-      stopWatching();
-      releaseWakeLock();
-    };
-    
+
+    return () => stopWatching();
+  }, [driverData]);
+
+  // ================= SOCKET ERROR =================
+  useEffect(() => {
+    socket.on("trackingError", (payload) => {
+      setError(payload?.message || "Tracking error");
+    });
+
+    return () => socket.off("trackingError");
   }, []);
 
   return (
     <div className="max-w-xl mx-auto p-6 text-center">
-      <h1 className="text-2xl font-bold mb-6 text-orange-600">Driver Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-3 text-orange-600">
+        Driver Dashboard
+      </h1>
 
+      {/* DRIVER + BUS INFO */}
+      <div className="mb-6 border p-4 rounded text-left">
+        <p>
+          <strong>Driver:</strong> {driverData.fullName}
+        </p>
+
+        <p>
+          <strong>Bus:</strong>{" "}
+          {busInfo ? busInfo.busNumber : "Not Assigned"}
+        </p>
+
+        <p>
+          <strong>Route:</strong>{" "}
+          {busInfo ? busInfo.route : "N/A"}
+        </p>
+
+        <p>
+          <strong>Status:</strong>{" "}
+          {tripStarted ? "Running" : "Not Started"}
+        </p>
+      </div>
+
+      {/* ERROR */}
+      {error && (
+        <div className="mb-4 text-red-600">
+          {handleAPIError({ message: error })}
+        </div>
+      )}
+
+      {/* BUTTON */}
       {!tripStarted ? (
         <button
           onClick={handleStartTrip}
-          className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow"
+          disabled={!driverData.busId}
+          className="bg-green-500 text-white px-6 py-3 rounded"
         >
           Start Trip
         </button>
       ) : (
         <button
           onClick={handleEndTrip}
-          className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg shadow"
+          className="bg-red-500 text-white px-6 py-3 rounded"
         >
           End Trip
         </button>
       )}
 
-      {tripStarted && location && (
-        <div className="mt-6 text-gray-700">
-          <p>
-            <strong>Latitude:</strong> {location.latitude}
-          </p>
-          <p>
-            <strong>Longitude:</strong> {location.longitude}
-          </p>
+      {/* LOCATION */}
+      {location && (
+        <div className="mt-4">
+          <p>Lat: {location.lat}</p>
+          <p>Lng: {location.lng}</p>
         </div>
       )}
 
-      {/* Tri-lingual banner that appears whenever a trip is active */}
       <TripLockWarning visible={tripStarted} />
+
+      {!driverData.busId && (
+        <p className="mt-4 text-yellow-700">
+          No bus assigned. Contact school.
+        </p>
+      )}
     </div>
   );
 };
