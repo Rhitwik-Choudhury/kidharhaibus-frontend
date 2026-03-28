@@ -110,7 +110,7 @@ const ContactSection = () => {
             Get In Touch
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Have questions about Trackify? Want to schedule a demo? We&apos;re
+            Have questions about Trackefy? Want to schedule a demo? We&apos;re
             here to help you ensure every child&apos;s journey is safe and tracked.
           </p>
         </div>

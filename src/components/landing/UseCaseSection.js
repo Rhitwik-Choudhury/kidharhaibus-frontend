@@ -66,7 +66,7 @@ const UseCaseSection = () => {
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Whether you're a parent wanting peace of mind, a school managing transportation, 
-            or a driver ensuring safe journeys, KidharHaiBus has you covered.
+            or a driver ensuring safe journeys, Trackefy has you covered.
           </p>
         </div>
 

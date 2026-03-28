@@ -47,7 +47,7 @@ const AuthLayout = ({ children, role, title, subtitle }) => {
         
         <div className="flex items-center space-x-2">
           <Bus className="h-6 w-6 text-gray-700" />
-          <span className="text-xl font-bold text-gray-900">KidharHaiBus</span>
+          <span className="text-xl font-bold text-gray-900">Trackefy</span>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ const AuthLayout = ({ children, role, title, subtitle }) => {
 
           {/* Footer */}
           <div className="text-center mt-6 text-sm text-gray-500">
-            Secured by KidharHaiBus • Your data is safe with us
+            Secured by Trackefy • Your data is safe with us
           </div>
         </div>
       </div>

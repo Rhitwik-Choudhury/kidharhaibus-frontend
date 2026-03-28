@@ -122,11 +122,11 @@ const SignUpForm = ({ role }) => {
   setIsLoading(true);
 
   try {
-    const isOtpValid = await verifyOTP(formData.email, otp);
-    if (!isOtpValid) throw new Error('Invalid OTP');
-
-    // base payload
-    let userData = { email: formData.email, password: formData.password };
+    let userData = {
+      email: formData.email,
+      password: formData.password,
+      otp: otp   // ✅ ADD THIS
+    };
 
     // role-specific fields
     switch (role) {

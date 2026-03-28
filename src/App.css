@@ -9,6 +9,14 @@
     }
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scrollbar-width: none;
+}
+
 .leaflet-control-attribution {
   display: none !important;
 }
