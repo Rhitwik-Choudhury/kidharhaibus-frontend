@@ -1,30 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { GoogleMap, Marker, Polyline, LoadScript } from '@react-google-maps/api';
 import socket from '../../lib/socket';
 import { parentAPI } from '../../services/api';
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-const MAPTILER_KEY = process.env.REACT_APP_MAPTILER_KEY || '9eLFBgrPYvv614T7WVu8';
-
-function AutoCenter({ lat, lng, zoom = 16 }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (lat != null && lng != null) {
-      map.flyTo([lat, lng], zoom, { animate: true, duration: 0.75 });
-    }
-  }, [lat, lng, zoom, map]);
-
-  return null;
-}
+const containerStyle = {
+  height: 500,
+  width: '100%',
+  borderRadius: 12,
+  overflow: 'hidden',
+};
 
 export default function ParentDashboard() {
   const [location, setLocation] = useState(null);
@@ -36,8 +20,10 @@ export default function ParentDashboard() {
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const mapRef = useRef(null);
   const mountedRef = useRef(true);
 
+  // ================= FETCH BUS =================
   useEffect(() => {
     mountedRef.current = true;
 
@@ -79,6 +65,7 @@ export default function ParentDashboard() {
     };
   }, []);
 
+  // ================= SOCKET =================
   useEffect(() => {
     if (!busId) return;
 
@@ -101,13 +88,20 @@ export default function ParentDashboard() {
 
       if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) return;
 
-      setLocation({ lat: parsedLat, lng: parsedLng });
+      const newLoc = { lat: parsedLat, lng: parsedLng };
+
+      setLocation(newLoc);
+
       setTrail((prev) => {
-        const next = [...prev, [parsedLat, parsedLng]];
+        const next = [...prev, newLoc];
         return next.length > 500 ? next.slice(-500) : next;
       });
 
       setTripStatus('started');
+
+      if (mapRef.current) {
+        mapRef.current.panTo(newLoc);
+      }
     };
 
     const handleTripStatus = (message) => {
@@ -132,7 +126,7 @@ export default function ParentDashboard() {
   }, [busId]);
 
   const initialCenter = useMemo(
-    () => (location ? [location.lat, location.lng] : [26.1573, 91.8173]),
+    () => (location ? location : { lat: 26.1573, lng: 91.8173 }),
     [location]
   );
 
@@ -181,39 +175,26 @@ export default function ParentDashboard() {
         {loading ? 'Loading your child’s bus...' : statusLine}
       </p>
 
-      <style>{`.leaflet-control-attribution{display:none !important}`}</style>
+      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={initialCenter}
+          zoom={15}
+          onLoad={(map) => (mapRef.current = map)}
+        >
+          {trail.length > 1 && (
+            <Polyline
+              path={trail}
+              options={{
+                strokeColor: '#2563eb',
+                strokeWeight: 4,
+              }}
+            />
+          )}
 
-      <MapContainer
-        center={initialCenter}
-        zoom={15}
-        attributionControl={false}
-        style={{ height: 500, width: '100%', borderRadius: 12, overflow: 'hidden' }}
-      >
-        <TileLayer
-          url={`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`}
-        />
-
-        {trail.length > 1 && (
-          <Polyline positions={trail} pathOptions={{ color: 'royalblue', weight: 4, opacity: 0.85 }} />
-        )}
-
-        {location && (
-          <>
-            <Marker position={[location.lat, location.lng]}>
-              <Popup>
-                <div className="text-sm">
-                  <div><strong>Bus location</strong></div>
-                  <div>Lat: {location.lat.toFixed(6)}</div>
-                  <div>Lng: {location.lng.toFixed(6)}</div>
-                  <div>Updated: {new Date().toLocaleTimeString()}</div>
-                </div>
-              </Popup>
-            </Marker>
-
-            <AutoCenter lat={location.lat} lng={location.lng} zoom={16} />
-          </>
-        )}
-      </MapContainer>
+          {location && <Marker position={location} />}
+        </GoogleMap>
+      </LoadScript>
 
       {!loading && !busId && (
         <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
