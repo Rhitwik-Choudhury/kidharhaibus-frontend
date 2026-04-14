@@ -20,6 +20,10 @@ export default function ParentDashboard() {
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ NEW STATES
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
   const mapRef = useRef(null);
   const mountedRef = useRef(true);
 
@@ -125,6 +129,30 @@ export default function ParentDashboard() {
     };
   }, [busId]);
 
+  // ✅ DEFAULT SELECTED LOCATION
+  useEffect(() => {
+    if (showLocationModal && location) {
+      setSelectedLocation(location);
+    }
+  }, [showLocationModal]);
+
+  // ✅ CONFIRM LOCATION
+  const handleConfirmLocation = async () => {
+    if (!selectedLocation) {
+      alert("Please select a location");
+      return;
+    }
+
+    try {
+      await parentAPI.setLocation(selectedLocation);
+      alert("Location saved successfully!");
+      setShowLocationModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save location");
+    }
+  };
+
   const initialCenter = useMemo(
     () => (location ? location : { lat: 26.1573, lng: 91.8173 }),
     [location]
@@ -158,20 +186,12 @@ export default function ParentDashboard() {
           )}
         </div>
 
-        <span
-          className={`text-sm px-3 py-1 rounded ${
-            isLive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-          }`}
-        >
+        <span className={`text-sm px-3 py-1 rounded ${isLive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
           {isLive ? 'Live' : 'Offline'}
         </span>
       </div>
 
-      <p
-        className={`mb-3 ${
-          isLive ? 'text-green-700' : tripStatus === 'ended' ? 'text-red-700' : 'text-gray-600'
-        }`}
-      >
+      <p className={`mb-3 ${isLive ? 'text-green-700' : tripStatus === 'ended' ? 'text-red-700' : 'text-gray-600'}`}>
         {loading ? 'Loading your child’s bus...' : statusLine}
       </p>
 
@@ -183,24 +203,63 @@ export default function ParentDashboard() {
           onLoad={(map) => (mapRef.current = map)}
         >
           {trail.length > 1 && (
-            <Polyline
-              path={trail}
-              options={{
-                strokeColor: '#2563eb',
-                strokeWeight: 4,
-              }}
-            />
+            <Polyline path={trail} options={{ strokeColor: '#2563eb', strokeWeight: 4 }} />
           )}
-
           {location && <Marker position={location} />}
         </GoogleMap>
       </LoadScript>
 
-      {!loading && !busId && (
-        <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
-          Your parent account is not linked to any student/bus yet. Please sign up with a valid student code or ask the school to verify the linkage.
+      {/* MODAL */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 w-[90%] max-w-2xl">
+            <h2 className="text-lg font-semibold mb-2">Select Pickup Location</h2>
+
+            <GoogleMap
+              mapContainerStyle={{ height: "400px", width: "100%" }}
+              center={selectedLocation || location || { lat: 26.1573, lng: 91.8173 }}
+              zoom={15}
+              onClick={(e) => {
+                setSelectedLocation({
+                  lat: e.latLng.lat(),
+                  lng: e.latLng.lng()
+                });
+              }}
+            >
+              {selectedLocation && (
+                <Marker
+                  position={selectedLocation}
+                  draggable
+                  onDragEnd={(e) => {
+                    setSelectedLocation({
+                      lat: e.latLng.lat(),
+                      lng: e.latLng.lng()
+                    });
+                  }}
+                />
+              )}
+            </GoogleMap>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowLocationModal(false)} className="px-4 py-2 bg-gray-300 rounded">
+                Cancel
+              </button>
+              <button onClick={handleConfirmLocation} className="px-4 py-2 bg-blue-600 text-white rounded">
+                Confirm Location
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      <div className="mt-4">
+        <button
+          onClick={() => setShowLocationModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        >
+          Set Pickup Location
+        </button>
+      </div>
 
       <div className="mt-4 text-xs text-gray-500">
         Socket: {connected ? 'Connected' : 'Disconnected'}

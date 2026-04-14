@@ -22,6 +22,7 @@ const SignUpForm = ({ role }) => {
     studentCode: '',
     schoolName: '',
     adminName: '',
+    phone: '',
     driverCode: ''
   });
 
@@ -118,6 +119,14 @@ const SignUpForm = ({ role }) => {
     });
     return;
   }
+  if (role === 'parent' && !formData.phone) {
+    toast({
+      title: "Phone required",
+      description: "Please enter phone number",
+      variant: "destructive"
+    });
+    return;
+  }
 
   setIsLoading(true);
 
@@ -131,6 +140,7 @@ const SignUpForm = ({ role }) => {
     // role-specific fields
     switch (role) {
       case 'parent': {
+        userData.phone = formData.phone;
         userData.fullName = formData.fullName;
         const finalCode =
           (formData.studentCode && formData.studentCode.trim()) || DEMO_STUDENT_CODE;
@@ -180,23 +190,44 @@ const SignUpForm = ({ role }) => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Parent: Full Name (now uses fullName to match backend) */}
       {role === 'parent' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Full Name *
-          </label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <>
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name *
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                placeholder="Enter your full name"
+                required
+                className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number *
+            </label>
             <Input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
+              type="tel"
+              name="phone"
+              value={formData.phone}
               onChange={handleInputChange}
-              placeholder="Enter your full name"
+              placeholder="Enter your phone number"
               required
-              className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors"
+              pattern="[0-9]{10}"
+              maxLength="10"
+              className="h-12 border-2 border-gray-200 focus:border-current transition-colors"
             />
           </div>
-        </div>
+        </>
       )}
 
       {/* School fields */}
