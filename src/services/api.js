@@ -120,7 +120,7 @@ export const driversAPI = {
 export const parentAPI = {
   getMyProfile: () => apiClient.get('/parent/me'),
   getMyBus: () => apiClient.get('/parent/my-bus'),
-  setLocation: (data) => apiClient.post('/parent/set-location', data),
+  setLocation: (data) => apiClient.post('/parent/set-pickup-location', data),
 };
 
 export const routesAPI = {

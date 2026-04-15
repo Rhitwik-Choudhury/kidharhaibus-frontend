@@ -117,14 +117,14 @@ export default function ParentDashboard() {
       if (message?.status === 'idle') setTripStatus('idle');
     };
 
-    socket.on('busLocationUpdated', handleLocation);
+    socket.on('location-update', handleLocation);
     socket.on('tripStatus', handleTripStatus);
 
     return () => {
       socket.emit('leaveBusRoom', { busId });
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
-      socket.off('busLocationUpdated', handleLocation);
+      socket.off('location-update', handleLocation);
       socket.off('tripStatus', handleTripStatus);
     };
   }, [busId]);
