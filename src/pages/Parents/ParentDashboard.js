@@ -76,11 +76,6 @@ export default function ParentDashboard() {
     const handleConnect = () => setConnected(true);
     const handleDisconnect = () => setConnected(false);
 
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-
-    socket.emit('joinBusRoom', { busId });
-
     const handleLocation = (payload) => {
       const { busId: incomingBusId, lat, lng } = payload || {};
 
@@ -108,6 +103,18 @@ export default function ParentDashboard() {
       }
     };
 
+    // ✅ THEN register listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+
+    socket.on('connect', () => {
+      console.log("✅ Connected, joining room:", busId);
+      socket.emit('joinBusRoom', { busId });
+    });
+
+    socket.on('location-update', handleLocation);
+    socket.on('busLocationUpdated', handleLocation); // ✅ now correct
+
     const handleTripStatus = (message) => {
       if (!mountedRef.current) return;
       if (String(message?.busId) !== String(busId)) return;
@@ -117,7 +124,6 @@ export default function ParentDashboard() {
       if (message?.status === 'idle') setTripStatus('idle');
     };
 
-    socket.on('location-update', handleLocation);
     socket.on('tripStatus', handleTripStatus);
 
     return () => {
