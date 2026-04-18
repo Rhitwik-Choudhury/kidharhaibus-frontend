@@ -24,7 +24,7 @@ const SOCKET_URL =
  * - path: only set if you changed it on the server (default is "/socket.io").
  */
 const socket = io(SOCKET_URL, {
-  // transports: ['websocket'], // ← removed on purpose to allow polling → websocket upgrade
+  transports: ['websocket'], // ← removed on purpose to allow polling → websocket upgrade
   withCredentials: true,
   reconnection: true,
   reconnectionAttempts: 5,
