@@ -144,8 +144,12 @@ export default function ParentDashboard() {
 
       const diff = Date.now() - lastUpdateRef.current;
 
-      if (diff > 10000) {
-        setTripStatus("offline"); // 🔥 NEW STATE
+      if (diff > 10000 && diff <= 60000) {
+        setTripStatus("stopped(traffic/pickup)"); // bus not moving but still active
+      }
+
+      if (diff > 60000) {
+        setTripStatus("offline");
       }
     }, 5000);
 
