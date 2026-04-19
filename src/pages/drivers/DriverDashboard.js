@@ -9,6 +9,7 @@ const STORAGE_KEY = "khb_trip_active";
 
 const DriverDashboard = () => {
   const { user } = useAuth();
+  const lastSentRef = useRef(0);
 
   const [driverData, setDriverData] = useState({
     driverId: user?.id || user?._id || null,
@@ -51,6 +52,7 @@ const DriverDashboard = () => {
       });
 
       setBusInfo(bus || null);
+      setTripStarted(driver.isOnTrip);
 
       // 🔥 also update localStorage (important)
       const updatedUser = {
@@ -116,7 +118,12 @@ const DriverDashboard = () => {
 
           setLocation(updatedLocation);
 
-          socket.emit("driverLocation", updatedLocation);
+          const now = Date.now();
+
+          if (now - lastSentRef.current > 3000) {
+            socket.emit("driverLocation", updatedLocation);
+            lastSentRef.current = now;
+          }
         },
         (err) => {
           console.error(err);
@@ -164,6 +171,21 @@ const DriverDashboard = () => {
     });
 
     return () => socket.off("trackingError");
+  }, []);
+
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("✅ Driver socket connected");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("⚠️ Driver socket disconnected");
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+    };
   }, []);
 
   return (

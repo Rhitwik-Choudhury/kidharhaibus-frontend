@@ -10,6 +10,8 @@ const containerStyle = {
   overflow: 'hidden',
 };
 
+const lastUpdateRef = useRef(Date.now());
+
 export default function ParentDashboard() {
   const [location, setLocation] = useState(null);
   const [trail, setTrail] = useState([]);
@@ -90,6 +92,7 @@ export default function ParentDashboard() {
       const newLoc = { lat: parsedLat, lng: parsedLng };
 
       setLocation(newLoc);
+      lastUpdateRef.current = Date.now();
 
       setTrail((prev) => {
         const next = [...prev, newLoc];
@@ -135,6 +138,20 @@ export default function ParentDashboard() {
     };
   }, [busId]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!location) return;
+
+      const diff = Date.now() - lastUpdateRef.current;
+
+      if (diff > 10000) {
+        setTripStatus("offline"); // 🔥 NEW STATE
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [location]);
+
   // ✅ DEFAULT SELECTED LOCATION
   useEffect(() => {
     if (showLocationModal && location) {
@@ -165,15 +182,18 @@ export default function ParentDashboard() {
   );
 
   const isLive = tripStatus === 'started';
+  const isOffline = tripStatus === 'offline';
 
   const statusLine =
-    !busId
-      ? 'No bus is linked to your child yet.'
-      : tripStatus === 'started'
-      ? 'Your child’s bus trip has started'
-      : tripStatus === 'ended'
-      ? 'Your child’s bus trip has ended'
-      : 'Waiting for the bus to start…';
+  !busId
+    ? 'No bus is linked to your child yet.'
+    : isOffline
+    ? 'Bus is currently offline'
+    : tripStatus === 'started'
+    ? 'Your child’s bus trip has started'
+    : tripStatus === 'ended'
+    ? 'Your child’s bus trip has ended'
+    : 'Waiting for the bus to start…';
 
   return (
     <div className="p-6">
