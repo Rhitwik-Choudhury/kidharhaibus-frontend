@@ -184,7 +184,7 @@ export default function ParentDashboard() {
     [location]
   );
 
-  const isLive = tripStatus === 'started';
+  const isLive = tripStatus === 'started' || tripStatus === 'stopped';
   const isOffline = tripStatus === 'offline';
 
   const statusLine =
