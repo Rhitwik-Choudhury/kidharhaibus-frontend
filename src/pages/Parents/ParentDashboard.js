@@ -10,9 +10,8 @@ const containerStyle = {
   overflow: 'hidden',
 };
 
-const lastUpdateRef = useRef(Date.now());
-
 export default function ParentDashboard() {
+  const lastUpdateRef = useRef(Date.now());
   const [location, setLocation] = useState(null);
   const [trail, setTrail] = useState([]);
   const [connected, setConnected] = useState(socket.connected);
@@ -145,7 +144,7 @@ export default function ParentDashboard() {
       const diff = Date.now() - lastUpdateRef.current;
 
       if (diff > 10000 && diff <= 60000) {
-        setTripStatus("stopped(traffic/pickup)"); // bus not moving but still active
+        setTripStatus("stopped"); // bus not moving but still active
       }
 
       if (diff > 60000) {
@@ -195,6 +194,8 @@ export default function ParentDashboard() {
     ? 'Bus is currently offline'
     : tripStatus === 'started'
     ? 'Your child’s bus trip has started'
+    : tripStatus === 'stopped'
+    ? 'Bus is currently stopped (traffic/pickup)'
     : tripStatus === 'ended'
     ? 'Your child’s bus trip has ended'
     : 'Waiting for the bus to start…';
