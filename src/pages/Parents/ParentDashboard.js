@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, Marker, Polyline, LoadScript } from '@react-google-maps/api';
 import socket from '../../lib/socket';
 import { parentAPI } from '../../services/api';
+import { useAuth } from "../../context/AuthContext"; // ✅ ADDED
 
 const containerStyle = {
   height: 500,
@@ -11,6 +12,9 @@ const containerStyle = {
 };
 
 export default function ParentDashboard() {
+
+  const { user } = useAuth(); // ✅ ADDED
+
   const lastUpdateRef = useRef(Date.now());
   const [location, setLocation] = useState(null);
   const [trail, setTrail] = useState([]);
@@ -21,7 +25,6 @@ export default function ParentDashboard() {
   const [studentInfo, setStudentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ NEW STATES
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
 
@@ -105,7 +108,6 @@ export default function ParentDashboard() {
       }
     };
 
-    // ✅ THEN register listeners
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
 
@@ -115,7 +117,7 @@ export default function ParentDashboard() {
     });
 
     socket.on('location-update', handleLocation);
-    socket.on('busLocationUpdated', handleLocation); // ✅ now correct
+    socket.on('busLocationUpdated', handleLocation);
 
     const handleTripStatus = (message) => {
       if (!mountedRef.current) return;
@@ -137,6 +139,26 @@ export default function ParentDashboard() {
     };
   }, [busId]);
 
+  // ================= ALERT LISTENER (NEW) =================
+  useEffect(() => {
+    if (!user) return;
+
+    const handleAlert = (data) => {
+      console.log("🔔 ALERT RECEIVED:", data);
+
+      if (data.parentId && String(data.parentId) !== String(user.id)) return;
+
+      alert(data.message);
+    };
+
+    socket.on("alert", handleAlert);
+
+    return () => {
+      socket.off("alert", handleAlert);
+    };
+  }, [user]);
+
+  // ================= STATUS TIMER =================
   useEffect(() => {
     const interval = setInterval(() => {
       if (!location) return;
@@ -144,7 +166,7 @@ export default function ParentDashboard() {
       const diff = Date.now() - lastUpdateRef.current;
 
       if (diff > 10000 && diff <= 60000) {
-        setTripStatus("stopped"); // bus not moving but still active
+        setTripStatus("stopped");
       }
 
       if (diff > 60000) {
@@ -155,14 +177,13 @@ export default function ParentDashboard() {
     return () => clearInterval(interval);
   }, [location]);
 
-  // ✅ DEFAULT SELECTED LOCATION
+  // ================= LOCATION MODAL =================
   useEffect(() => {
     if (showLocationModal && location) {
       setSelectedLocation(location);
     }
   }, [showLocationModal]);
 
-  // ✅ CONFIRM LOCATION
   const handleConfirmLocation = async () => {
     if (!selectedLocation) {
       alert("Please select a location");
@@ -188,109 +209,37 @@ export default function ParentDashboard() {
   const isOffline = tripStatus === 'offline';
 
   const statusLine =
-  !busId
-    ? 'No bus is linked to your child yet.'
-    : isOffline
-    ? 'Bus is currently offline'
-    : tripStatus === 'started'
-    ? 'Your child’s bus trip has started'
-    : tripStatus === 'stopped'
-    ? 'Bus is currently stopped (traffic/pickup)'
-    : tripStatus === 'ended'
-    ? 'Your child’s bus trip has ended'
-    : 'Waiting for the bus to start…';
+    !busId
+      ? 'No bus is linked to your child yet.'
+      : isOffline
+      ? 'Bus is currently offline'
+      : tripStatus === 'started'
+      ? 'Your child’s bus trip has started'
+      : tripStatus === 'stopped'
+      ? 'Bus is currently stopped (traffic/pickup)'
+      : tripStatus === 'ended'
+      ? 'Your child’s bus trip has ended'
+      : 'Waiting for the bus to start…';
 
   return (
     <div className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Track Your Child’s Bus</h1>
-          {studentInfo && (
-            <p className="text-sm text-gray-600 mt-1">
-              Student: {studentInfo.name} {studentInfo.studentCode ? `• ${studentInfo.studentCode}` : ''}
-            </p>
-          )}
-          {busInfo && (
-            <p className="text-sm text-gray-600">
-              Bus: {busInfo.busNumber} • Route: {busInfo.route}
-            </p>
-          )}
-        </div>
+      <h1 className="text-2xl font-bold mb-4">Track Your Child’s Bus</h1>
 
-        <span className={`text-sm px-3 py-1 rounded ${isLive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-          {isLive ? 'Live' : 'Offline'}
-        </span>
-      </div>
-
-      <p className={`mb-3 ${isLive ? 'text-green-700' : tripStatus === 'ended' ? 'text-red-700' : 'text-gray-600'}`}>
-        {loading ? 'Loading your child’s bus...' : statusLine}
-      </p>
+      <p className="mb-3">{loading ? 'Loading...' : statusLine}</p>
 
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={initialCenter}
-          zoom={15}
-          onLoad={(map) => (mapRef.current = map)}
-        >
-          {trail.length > 1 && (
-            <Polyline path={trail} options={{ strokeColor: '#2563eb', strokeWeight: 4 }} />
-          )}
+        <GoogleMap mapContainerStyle={containerStyle} center={initialCenter} zoom={15}>
+          {trail.length > 1 && <Polyline path={trail} options={{ strokeColor: '#2563eb' }} />}
           {location && <Marker position={location} />}
         </GoogleMap>
       </LoadScript>
 
-      {/* MODAL */}
-      {showLocationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 w-[90%] max-w-2xl">
-            <h2 className="text-lg font-semibold mb-2">Select Pickup Location</h2>
-
-            <GoogleMap
-              mapContainerStyle={{ height: "400px", width: "100%" }}
-              center={selectedLocation || location || { lat: 26.1573, lng: 91.8173 }}
-              zoom={15}
-              onClick={(e) => {
-                setSelectedLocation({
-                  lat: e.latLng.lat(),
-                  lng: e.latLng.lng()
-                });
-              }}
-            >
-              {selectedLocation && (
-                <Marker
-                  position={selectedLocation}
-                  draggable
-                  onDragEnd={(e) => {
-                    setSelectedLocation({
-                      lat: e.latLng.lat(),
-                      lng: e.latLng.lng()
-                    });
-                  }}
-                />
-              )}
-            </GoogleMap>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowLocationModal(false)} className="px-4 py-2 bg-gray-300 rounded">
-                Cancel
-              </button>
-              <button onClick={handleConfirmLocation} className="px-4 py-2 bg-blue-600 text-white rounded">
-                Confirm Location
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-4">
-        <button
-          onClick={() => setShowLocationModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-        >
-          Set Pickup Location
-        </button>
-      </div>
+      <button
+        onClick={() => setShowLocationModal(true)}
+        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+      >
+        Set Pickup Location
+      </button>
 
       <div className="mt-4 text-xs text-gray-500">
         Socket: {connected ? 'Connected' : 'Disconnected'}
