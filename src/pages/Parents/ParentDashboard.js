@@ -146,7 +146,7 @@ export default function ParentDashboard() {
     const handleAlert = (data) => {
       console.log("🔔 ALERT RECEIVED:", data);
 
-      if (data.parentId && String(data.parentId) !== String(user.id)) return;
+      if (data.parentId && String(data.parentId) !== String(user?._id)) return;
 
       alert(data.message);
     };
