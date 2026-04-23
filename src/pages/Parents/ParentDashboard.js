@@ -13,7 +13,16 @@ const containerStyle = {
 
 export default function ParentDashboard() {
 
-  const { user } = useAuth(); // ✅ ADDED
+  const { user } = useAuth();
+
+  window.testLocation = () => {
+    socket.emit("driverLocation", {
+      driverId: "69ca74538f1f04dd72aa98c5",
+      busId: "69c7d41b4e2021c7949f073c",
+      lat: 26.160,
+      lng: 91.820
+    });
+  };
 
   const lastUpdateRef = useRef(Date.now());
   const [location, setLocation] = useState(null);
