@@ -120,8 +120,15 @@ export default function ParentDashboard() {
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
 
+    // ✅ JOIN IMMEDIATELY if already connected
+    if (socket.connected) {
+      console.log("⚡ Already connected, joining room:", busId);
+      socket.emit('joinBusRoom', { busId });
+    }
+
+    // ✅ ALSO handle future reconnects
     socket.on('connect', () => {
-      console.log("✅ Connected, joining room:", busId);
+      console.log("🔁 Reconnected, joining room:", busId);
       socket.emit('joinBusRoom', { busId });
     });
 
@@ -157,7 +164,10 @@ export default function ParentDashboard() {
 
       // if (data.parentId && String(data.parentId) !== String(user?._id)) return;
 
-      alert(data.message);
+      if (!window.lastAlert || window.lastAlert !== data.message) {
+        alert(data.message);
+        window.lastAlert = data.message;
+      }
     };
 
     socket.on("alert", handleAlert);
