@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, Marker, Polyline, LoadScript } from '@react-google-maps/api';
+import {
+  GoogleMap,
+  Marker,
+  Polyline,
+  LoadScript,
+  Autocomplete
+} from '@react-google-maps/api';
+
 import socket from '../../lib/socket';
 import { parentAPI } from '../../services/api';
 import { useAuth } from "../../context/AuthContext";
@@ -15,27 +22,31 @@ export default function ParentDashboard() {
 
   const { user } = useAuth();
 
-  const lastUpdateRef = useRef(Date.now());
+  const mapRef = useRef(null);
+  const autoCompleteRef = useRef(null);
+
   const [location, setLocation] = useState(null);
+  const [savedPickup, setSavedPickup] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
   const [trail, setTrail] = useState([]);
   const [connected, setConnected] = useState(socket.connected);
   const [tripStatus, setTripStatus] = useState('idle');
   const [busId, setBusId] = useState(null);
   const [loading, setLoading] = useState(true);
-
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState(null);
-
-  const mapRef = useRef(null);
 
   // ================= FETCH BUS =================
   useEffect(() => {
     const fetchMyBus = async () => {
       try {
         setLoading(true);
+
         const { data } = await parentAPI.getMyBus();
 
         const bus = data?.bus || null;
+        const parent = data?.parent || null;
+
         setBusId(bus?._id || null);
 
         if (bus?.currentLocation) {
@@ -45,11 +56,21 @@ export default function ParentDashboard() {
           });
         }
 
+        // ✅ LOAD SAVED PICKUP LOCATION
+        if (parent?.stopLocation) {
+          const saved = {
+            lat: parent.stopLocation.lat,
+            lng: parent.stopLocation.lng,
+          };
+          setSavedPickup(saved);
+        }
+
         if (bus?.tripStatus) {
           setTripStatus(bus.tripStatus);
         }
-      } catch (error) {
-        console.error(error);
+
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -74,6 +95,7 @@ export default function ParentDashboard() {
       if (String(id) !== String(busId)) return;
 
       const newLoc = { lat: Number(lat), lng: Number(lng) };
+
       setLocation(newLoc);
       setTrail(prev => [...prev.slice(-500), newLoc]);
       setTripStatus('started');
@@ -87,6 +109,7 @@ export default function ParentDashboard() {
     return () => {
       socket.emit('leaveBusRoom', { busId });
     };
+
   }, [busId]);
 
   // ================= ALERT =================
@@ -104,10 +127,14 @@ export default function ParentDashboard() {
     return () => socket.off("alert", handleAlert);
   }, []);
 
-  // ================= LOCATION INIT =================
+  // ================= INITIAL MODAL LOCATION =================
   useEffect(() => {
-    if (showLocationModal && location) {
-      setSelectedLocation(location);
+    if (showLocationModal) {
+      if (savedPickup) {
+        setSelectedLocation(savedPickup);
+      } else if (location) {
+        setSelectedLocation(location);
+      }
     }
   }, [showLocationModal]);
 
@@ -122,9 +149,26 @@ export default function ParentDashboard() {
       await parentAPI.setLocation(selectedLocation);
       alert("Location saved!");
       setShowLocationModal(false);
+      setSavedPickup(selectedLocation);
     } catch (err) {
       console.error(err);
     }
+  };
+
+  // ================= SEARCH HANDLER =================
+  const onPlaceChanged = () => {
+    const place = autoCompleteRef.current.getPlace();
+
+    if (!place.geometry) return;
+
+    const loc = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng(),
+    };
+
+    setSelectedLocation(loc);
+
+    mapRef.current.panTo(loc);
   };
 
   const center = useMemo(
@@ -133,7 +177,10 @@ export default function ParentDashboard() {
   );
 
   return (
-    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+    <LoadScript
+      googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
+      libraries={["places"]}
+    >
       <div className="p-6">
 
         <h1 className="text-xl font-bold mb-3">Track Your Child’s Bus</h1>
@@ -188,15 +235,31 @@ export default function ParentDashboard() {
               maxWidth: 400
             }}>
               <h3>Select Pickup Location</h3>
-              <p>Drag the map to adjust your pickup location</p>
+
+              {/* 🔍 SEARCH BOX */}
+              <Autocomplete
+                onLoad={(ref) => (autoCompleteRef.current = ref)}
+                onPlaceChanged={onPlaceChanged}
+              >
+                <input
+                  type="text"
+                  placeholder="Search location..."
+                  style={{
+                    width: "100%",
+                    height: 40,
+                    marginBottom: 10,
+                    padding: "0 10px",
+                    border: "1px solid #ccc",
+                    borderRadius: 6
+                  }}
+                />
+              </Autocomplete>
 
               <GoogleMap
                 mapContainerStyle={{ height: 300, width: "100%" }}
                 center={selectedLocation || center}
                 zoom={15}
-                onLoad={(map) => {
-                  mapRef.current = map;
-                }}
+                onLoad={(map) => (mapRef.current = map)}
                 onClick={(e) => {
                   setSelectedLocation({
                     lat: e.latLng.lat(),
