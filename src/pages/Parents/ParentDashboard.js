@@ -104,6 +104,13 @@ export default function ParentDashboard() {
     return () => socket.off("alert", handleAlert);
   }, []);
 
+  // ================= LOCATION INIT =================
+  useEffect(() => {
+    if (showLocationModal && location) {
+      setSelectedLocation(location);
+    }
+  }, [showLocationModal]);
+
   // ================= SAVE LOCATION =================
   const handleConfirmLocation = async () => {
     if (!selectedLocation) {
@@ -126,93 +133,98 @@ export default function ParentDashboard() {
   );
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-3">Track Your Child’s Bus</h1>
+    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+      <div className="p-6">
 
-      <p>
-        {loading
-          ? "Loading..."
-          : tripStatus === "started"
-          ? "Your child’s bus trip has started"
-          : tripStatus === "ended"
-          ? "Your child’s bus trip has ended"
-          : "Waiting for bus..."}
-      </p>
+        <h1 className="text-xl font-bold mb-3">Track Your Child’s Bus</h1>
 
-      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
+        <p>
+          {loading
+            ? "Loading..."
+            : tripStatus === "started"
+            ? "Your child’s bus trip has started"
+            : tripStatus === "ended"
+            ? "Your child’s bus trip has ended"
+            : "Waiting for bus..."}
+        </p>
+
         <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={15}>
           {trail.length > 1 && (
             <Polyline path={trail} options={{ strokeColor: "#2563eb" }} />
           )}
           {location && <Marker position={location} />}
         </GoogleMap>
-      </LoadScript>
 
-      <button
-        onClick={() => setShowLocationModal(true)}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-      >
-        Set Pickup Location
-      </button>
+        <button
+          onClick={() => setShowLocationModal(true)}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Set Pickup Location
+        </button>
 
-      <div className="mt-3 text-sm">
-        Socket: {connected ? "Connected" : "Disconnected"}
-      </div>
+        <div className="mt-3 text-sm">
+          Socket: {connected ? "Connected" : "Disconnected"}
+        </div>
 
-      {/* ================= MODAL ================= */}
-      {showLocationModal && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 999
-        }}>
+        {/* ================= MODAL ================= */}
+        {showLocationModal && (
           <div style={{
-            background: "white",
-            padding: 20,
-            borderRadius: 10,
-            width: "90%",
-            maxWidth: 400
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 999
           }}>
-            <h3>Select Pickup Location</h3>
+            <div style={{
+              background: "white",
+              padding: 20,
+              borderRadius: 10,
+              width: "90%",
+              maxWidth: 400
+            }}>
+              <h3>Select Pickup Location</h3>
+              <p>Drag the map to adjust your pickup location</p>
 
-            <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
               <GoogleMap
                 mapContainerStyle={{ height: 300, width: "100%" }}
-                center={center}
+                center={selectedLocation || center}
                 zoom={15}
-                onClick={(e) => {
+                onLoad={(map) => {
+                  mapRef.current = map;
+                }}
+                onDragEnd={() => {
+                  const c = mapRef.current.getCenter();
                   setSelectedLocation({
-                    lat: e.latLng.lat(),
-                    lng: e.latLng.lng(),
+                    lat: c.lat(),
+                    lng: c.lng(),
                   });
                 }}
               >
-                {selectedLocation && <Marker position={selectedLocation} />}
+                <Marker position={selectedLocation || center} />
               </GoogleMap>
-            </LoadScript>
 
-            <div style={{ marginTop: 10 }}>
-              <button onClick={handleConfirmLocation}>
-                Confirm
-              </button>
+              <div style={{ marginTop: 10 }}>
+                <button onClick={handleConfirmLocation}>
+                  Confirm
+                </button>
 
-              <button
-                onClick={() => setShowLocationModal(false)}
-                style={{ marginLeft: 10 }}
-              >
-                Cancel
-              </button>
+                <button
+                  onClick={() => setShowLocationModal(false)}
+                  style={{ marginLeft: 10 }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+      </div>
+    </LoadScript>
   );
 }
