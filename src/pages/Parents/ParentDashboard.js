@@ -197,15 +197,23 @@ export default function ParentDashboard() {
                 onLoad={(map) => {
                   mapRef.current = map;
                 }}
-                onDragEnd={() => {
-                  const c = mapRef.current.getCenter();
+                onClick={(e) => {
                   setSelectedLocation({
-                    lat: c.lat(),
-                    lng: c.lng(),
+                    lat: e.latLng.lat(),
+                    lng: e.latLng.lng(),
                   });
                 }}
               >
-                <Marker position={selectedLocation || center} />
+                <Marker
+                  position={selectedLocation || center}
+                  draggable={true}
+                  onDragEnd={(e) => {
+                    setSelectedLocation({
+                      lat: e.latLng.lat(),
+                      lng: e.latLng.lng(),
+                    });
+                  }}
+                />
               </GoogleMap>
 
               <div style={{ marginTop: 10 }}>
