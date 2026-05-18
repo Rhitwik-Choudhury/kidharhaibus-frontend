@@ -3,14 +3,24 @@ import React from "react";
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 px-6 py-10">
-      <div className="max-w-4xl mx-auto bg-white shadow-sm rounded-2xl p-6 md:p-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Privacy Policy for Trackefy
-        </h1>
+        <div className="max-w-4xl mx-auto bg-white shadow-sm rounded-2xl p-6 md:p-10">
+            <div className="flex items-center gap-4 mb-6">
+            <img
+                src="/favicon.jpeg"
+                alt="Trackefy logo"
+                className="w-14 h-14 rounded-full object-cover"
+            />
 
-        <p className="text-sm text-gray-500 mb-8">
-          Last updated: May 18, 2026
-        </p>
+            <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                Privacy Policy for Trackefy
+                </h1>
+
+                <p className="text-sm text-gray-500">
+                Last updated: May 18, 2026
+                </p>
+            </div>
+        </div>
 
         <p className="mb-4">
           Trackefy is a school bus tracking platform designed for schools,
