@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "39d72f72-983d-4196-baa4-30550ef51771"
+      }
+    },
+    "android": {
+      "package": "com.trackefy.app"
+    }
+  }
+}
