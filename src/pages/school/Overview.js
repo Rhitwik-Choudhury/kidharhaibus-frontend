@@ -6,6 +6,7 @@ import {
   Bus,
   Map,
   AlertTriangle,
+  Copy,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -59,11 +60,55 @@ const chartData = stats.slice(0, 3).map((stat) => ({
 const Overview = () => {
   const { user } = useAuth(); // Access user info from context
   console.log("User from AuthContext:", user);
-  const schoolName = user?.schoolName || "Overview"; // fallback if not loaded
+
+  const schoolName = user?.schoolName || "Overview";
+  const schoolCode = user?.schoolCode || "Not available";
+
+  const handleCopySchoolCode = async () => {
+    if (!user?.schoolCode) {
+      alert("School code is not available. Please log out and log in again.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(user.schoolCode);
+      alert("School code copied!");
+    } catch (error) {
+      console.error("Copy failed:", error);
+      alert("Could not copy school code. Please copy it manually.");
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-2xl font-semibold mb-6">{schoolName}</h1>
+      <h1 className="text-2xl font-semibold mb-4">{schoolName}</h1>
+
+      {/* School Code Card */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-blue-700">
+            School Code
+          </p>
+
+          <p className="text-2xl font-bold text-blue-900 tracking-wider">
+            {schoolCode}
+          </p>
+
+          <p className="text-xs text-blue-600 mt-1">
+            Share this code with drivers during signup so they can join your school.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCopySchoolCode}
+          disabled={!user?.schoolCode}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Copy className="w-4 h-4" />
+          Copy Code
+        </button>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">

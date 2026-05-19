@@ -416,11 +416,11 @@ const SignUpForm = ({ role }) => {
         </div>
       )}
 
-      {/* Driver: Driver Code */}
+      {/* Driver: School Code */}
       {role === 'driver' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Driver Code *
+            School Code *
           </label>
           <div className="relative">
             <Code className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -429,13 +429,13 @@ const SignUpForm = ({ role }) => {
               name="driverCode"
               value={formData.driverCode}
               onChange={handleInputChange}
-              placeholder="Enter driver code issued by school"
+              placeholder="Enter school code shared by your school"
               required
-              className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors"
+              className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors uppercase"
             />
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            Use code: <span className="font-semibold text-orange-600">DRIVER2025</span>
+            Ask your school admin for the school code.
           </p>
         </div>
       )}
