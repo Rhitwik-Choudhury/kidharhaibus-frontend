@@ -60,7 +60,7 @@ const Sidebar = () => {
               collapsed ? "scale-0 opacity-0 w-0" : "scale-100 opacity-100"
             }`}
           >
-            KidharHaiBus
+            Trackefy
           </h2>
 
           {/* Collapse toggle (desktop only) */}
