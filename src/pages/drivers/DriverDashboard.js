@@ -241,6 +241,17 @@ const DriverDashboard = () => {
         </button>
       )}
 
+      <div className="mt-4">
+        <a
+          href="/delete-account"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-red-600 hover:underline text-sm font-semibold"
+        >
+          Delete Account
+        </a>
+      </div>
+
       {/* LOCATION */}
       {location && (
         <div className="mt-4">

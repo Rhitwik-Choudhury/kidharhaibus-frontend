@@ -9,6 +9,7 @@ import {
   Map,
   AlertTriangle,
   Settings,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -23,6 +24,7 @@ const navItems = [
   { name: "Trips", path: "/school/trips", icon: Map },
   { name: "Alerts", path: "/school/alerts", icon: AlertTriangle },
   { name: "Settings", path: "/school/settings", icon: Settings },
+  { name: "Delete Account", path: "/delete-account", icon: Trash2, external: true },
 ];
 
 const Sidebar = () => {
@@ -85,21 +87,39 @@ const Sidebar = () => {
 
         {/* Navigation Links */}
         <nav className="flex flex-col space-y-2">
-          {navItems.map(({ name, path, icon: Icon }) => (
-            <NavLink
-              key={name}
-              to={path}
-              onClick={() => setMobileOpen(false)} // close drawer on mobile
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-md hover:bg-blue-600 transition-all ${
-                  isActive ? "bg-white text-blue-700 font-semibold" : ""
-                }`
-              }
-            >
-              <Icon className="w-5 h-5" />
-              {!collapsed && <span>{name}</span>}
-            </NavLink>
-          ))}
+          {navItems.map(({ name, path, icon: Icon, external }) => {
+            if (external) {
+              return (
+                <a
+                  key={name}
+                  href={path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2 rounded-md hover:bg-blue-600 transition-all text-red-200"
+                >
+                  <Icon className="w-5 h-5" />
+                  {!collapsed && <span>{name}</span>}
+                </a>
+              );
+            }
+
+            return (
+              <NavLink
+                key={name}
+                to={path}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-2 rounded-md hover:bg-blue-600 transition-all ${
+                    isActive ? "bg-white text-blue-700 font-semibold" : ""
+                  }`
+                }
+              >
+                <Icon className="w-5 h-5" />
+                {!collapsed && <span>{name}</span>}
+              </NavLink>
+            );
+          })}
         </nav>
       </aside>
 

@@ -209,6 +209,15 @@ export default function ParentDashboard() {
           Set Pickup Location
         </button>
 
+        <a
+          href="/delete-account"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block mt-4 ml-4 text-red-600 hover:underline text-sm font-semibold"
+        >
+          Delete Account
+        </a>
+
         <div className="mt-3 text-sm">
           Socket: {connected ? "Connected" : "Disconnected"}
         </div>
