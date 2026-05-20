@@ -7,7 +7,9 @@
  * - Replaces the Parent dashboard placeholder with the live map dashboard
  * - Keeps Driver dashboard route
  */
+
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DeleteAccount from "./pages/DeleteAccount";
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -51,6 +53,7 @@ function App() {
             {/* Landing */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/delete-account" element={<DeleteAccount />} />
 
             {/* Auth */}
             <Route path="/auth/parent/signin" element={<ParentSignIn />} />
