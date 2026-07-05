@@ -1,5 +1,5 @@
 // src/components/auth/SignUpForm.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -31,11 +31,22 @@ const SignUpForm = ({ role }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   // ⬇️ include logout so we can send them to sign-in cleanly
   const { signup, sendOTP, verifyOTP, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  useEffect(() => {
+    if (otpTimer <= 0) return;
+
+    const interval = setInterval(() => {
+      setOtpTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [otpTimer]);
 
   const getRoleConfig = (role) => {
     const configs = {
@@ -64,14 +75,26 @@ const SignUpForm = ({ role }) => {
   const config = getRoleConfig(role);
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "email" && otpSent) {
+      setOtpSent(false);
+      setOtp("");
+      setOtpTimer(0);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
   };
 
   const handleSendOTP = async () => {
-    if (!formData.email) {
+    if (isSendingOtp || otpTimer > 0) return;
+
+    const email = formData.email.trim().toLowerCase();
+
+    if (!email) {
       toast({
         title: 'Email Required',
         description: 'Please enter your email first.',
@@ -80,13 +103,29 @@ const SignUpForm = ({ role }) => {
       return;
     }
 
-    setIsLoading(true);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSendingOtp(true);
+
     try {
-      await sendOTP(formData.email);
+      await sendOTP(email);
       setOtpSent(true);
+      setOtp('');
+      setOtpTimer(60);
+
       toast({
         title: 'OTP Sent!',
-        description: 'Please check your email for the verification code.',
+        description: 'Please check your email. The code is valid for 1 minute.',
       });
     } catch (error) {
       toast({
@@ -95,7 +134,7 @@ const SignUpForm = ({ role }) => {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsSendingOtp(false);
     }
   };
 
@@ -306,20 +345,24 @@ const SignUpForm = ({ role }) => {
               onChange={handleInputChange}
               placeholder="Enter your email"
               required
-              disabled={otpSent}
+              disabled={isSendingOtp}
               className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors disabled:bg-gray-100"
             />
           </div>
-          {!otpSent && (
-            <Button
-              type="button"
-              onClick={handleSendOTP}
-              disabled={isLoading}
-              className={`${config.buttonClass} px-4 py-3 text-sm font-medium rounded-lg`}
-            >
-              Send OTP
-            </Button>
-          )}
+          <Button
+            type="button"
+            onClick={handleSendOTP}
+            disabled={isSendingOtp || otpTimer > 0}
+            className={`${config.buttonClass} px-4 py-3 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isSendingOtp
+              ? 'Sending...'
+              : otpSent && otpTimer > 0
+                ? `Resend in ${otpTimer}s`
+                : otpSent
+                  ? 'Resend OTP'
+                  : 'Send OTP'}
+          </Button>
         </div>
       </div>
 
@@ -338,7 +381,6 @@ const SignUpForm = ({ role }) => {
             required
             className="h-12 border-2 border-gray-200 focus:border-current transition-colors text-center text-lg tracking-widest"
           />
-          <p className="text-xs text-gray-500 mt-1">Demo OTP: 123456</p>
         </div>
       )}
 
