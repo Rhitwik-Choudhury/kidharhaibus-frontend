@@ -335,7 +335,7 @@ const SignUpForm = ({ role }) => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Email *
         </label>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
@@ -353,7 +353,7 @@ const SignUpForm = ({ role }) => {
             type="button"
             onClick={handleSendOTP}
             disabled={isSendingOtp || otpTimer > 0}
-            className={`${config.buttonClass} px-4 py-3 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`${config.buttonClass} w-full sm:w-auto min-h-[48px] px-5 py-3 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isSendingOtp
               ? 'Sending...'
