@@ -31,20 +31,21 @@ const HeroSection = () => {
         }}
       />
 
-      {/* Professional overlay */}
+      {/* Professional dark overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/85 to-blue-950/55" />
 
-      {/* Soft bottom fade */}
+      {/* Bottom fade */}
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-slate-950/80 to-transparent" />
 
       {/* Main content */}
       <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center px-4 py-28 sm:px-6 lg:px-8">
         <div className="grid w-full items-center gap-12 lg:grid-cols-2">
 
-          {/* Left content */}
-          <div className="max-w-2xl">
+          {/* Main hero content */}
+          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
+
             {/* Badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-blue-100 backdrop-blur-md">
+            <div className="mb-6 inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-blue-100 backdrop-blur-md">
               <ShieldCheck className="h-4 w-4 text-blue-300" />
               Smarter and safer school journeys
             </div>
@@ -58,41 +59,44 @@ const HeroSection = () => {
             </h1>
 
             {/* Description */}
-            <p className="mt-6 max-w-xl text-base font-medium leading-7 text-slate-200 sm:text-lg sm:leading-8">
+            <p className="mx-auto mt-6 max-w-xl text-base font-medium leading-7 text-slate-200 sm:text-lg sm:leading-8 lg:mx-0">
               Trackefy connects parents, schools and drivers through live bus
               tracking, timely alerts and reliable journey updates—helping every
               child reach school and home more safely.
             </p>
 
             {/* Trust points */}
-            <div className="mt-7 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
-              <div className="flex items-center gap-2">
+            <div className="mx-auto mt-7 grid max-w-xl gap-3 text-sm text-slate-200 sm:grid-cols-2 lg:mx-0">
+
+              <div className="flex items-center justify-center gap-2 lg:justify-start">
                 <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-400" />
-                Live bus location updates
+                <span>Live bus location updates</span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 lg:justify-start">
                 <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-400" />
-                Arrival and trip alerts
+                <span>Arrival and trip alerts</span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 lg:justify-start">
                 <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-400" />
-                Separate access for every role
+                <span>Separate access for every role</span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 lg:justify-start">
                 <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-emerald-400" />
-                Built for safer school transport
+                <span>Built for safer school transport</span>
               </div>
+
             </div>
 
             {/* CTA buttons */}
-            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
+
               <Button
                 size="lg"
                 onClick={goToParentSignIn}
-                className="h-14 rounded-xl bg-blue-600 px-7 text-base font-semibold text-white shadow-xl shadow-blue-950/30 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-500 hover:shadow-2xl"
+                className="h-14 w-full max-w-sm rounded-xl bg-blue-600 px-7 text-base font-semibold text-white shadow-xl shadow-blue-950/30 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-500 hover:shadow-2xl sm:w-auto"
               >
                 Start Tracking Now
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -103,17 +107,19 @@ const HeroSection = () => {
                 variant="outline"
                 size="lg"
                 onClick={goToParentSignIn}
-                className="h-14 rounded-xl border-white/30 bg-white/10 px-7 text-base font-semibold text-white backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/20 hover:text-white"
+                className="h-14 w-full max-w-sm rounded-xl border-white/30 bg-white/10 px-7 text-base font-semibold text-white backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/20 hover:text-white sm:w-auto"
               >
                 <PlayCircle className="mr-2 h-5 w-5" />
                 Watch Demo
               </Button>
+
             </div>
           </div>
 
-          {/* Right feature panel */}
+          {/* Desktop feature panel */}
           <div className="hidden lg:block">
             <div className="ml-auto max-w-md rounded-3xl border border-white/20 bg-white/10 p-7 shadow-2xl backdrop-blur-xl">
+
               <div className="mb-7">
                 <p className="text-sm font-medium uppercase tracking-wider text-blue-200">
                   Trackefy platform
@@ -129,6 +135,7 @@ const HeroSection = () => {
               </div>
 
               <div className="space-y-4">
+
                 <div className="flex items-start gap-4 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
                   <div className="rounded-xl bg-emerald-400/15 p-3">
                     <MapPin className="h-6 w-6 text-emerald-300" />
@@ -138,6 +145,7 @@ const HeroSection = () => {
                     <h3 className="font-semibold text-white">
                       Live Location
                     </h3>
+
                     <p className="mt-1 text-sm leading-5 text-slate-300">
                       Follow the school bus journey with continuously updated
                       location information.
@@ -154,6 +162,7 @@ const HeroSection = () => {
                     <h3 className="font-semibold text-white">
                       Real-time Alerts
                     </h3>
+
                     <p className="mt-1 text-sm leading-5 text-slate-300">
                       Receive updates when the trip starts, the bus approaches
                       and the child arrives.
@@ -170,12 +179,14 @@ const HeroSection = () => {
                     <h3 className="font-semibold text-white">
                       Secure Role Access
                     </h3>
+
                     <p className="mt-1 text-sm leading-5 text-slate-300">
                       Dedicated accounts and dashboards for parents, schools
                       and drivers.
                     </p>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
