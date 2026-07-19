@@ -7,9 +7,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/use-toast';
 import { Eye, EyeOff, Lock, User, Building, Code, Mail } from 'lucide-react';
 
-// Demo student code used during MVP (optional field)
-const DEMO_STUDENT_CODE = 'CHILD-DEMO-001';
-
 const SignUpForm = ({ role }) => {
   const [formData, setFormData] = useState({
     // 👇 we’ll use fullName for BOTH parent and driver to match backend
@@ -167,6 +164,15 @@ const SignUpForm = ({ role }) => {
     return;
   }
 
+  if (role === 'parent' && !formData.studentCode.trim()) {
+    toast({
+      title: "Student code required",
+      description: "Please enter the student code provided by your school.",
+      variant: "destructive"
+    });
+    return;
+  }
+
   setIsLoading(true);
 
   try {
@@ -181,13 +187,8 @@ const SignUpForm = ({ role }) => {
       case 'parent': {
         userData.phone = formData.phone;
         userData.fullName = formData.fullName;
-        const finalCode =
-          (formData.studentCode && formData.studentCode.trim()) || DEMO_STUDENT_CODE;
-        userData.studentCode = finalCode;
+        userData.studentCode = formData.studentCode.trim().toUpperCase();
         userData.children = [];
-        if (!formData.studentCode?.trim()) {
-          setFormData((prev) => ({ ...prev, studentCode: finalCode }));
-        }
         break;
       }
       case 'school': {
@@ -435,25 +436,30 @@ const SignUpForm = ({ role }) => {
         </div>
       </div>
 
-      {/* Parent: Student Code (optional for demo) */}
+      {/* Parent: Student Code */}
       {role === 'parent' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Student Code <span className="text-gray-400">(optional for demo)</span>
+            Student Code *
           </label>
+
           <div className="relative">
             <Code className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+
             <Input
               type="text"
               name="studentCode"
               value={formData.studentCode}
               onChange={handleInputChange}
-              placeholder="Enter student code to link child"
-              className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors"
+              placeholder="Enter the student code provided by your school"
+              required
+              autoCapitalize="characters"
+              className="pl-12 h-12 border-2 border-gray-200 focus:border-current transition-colors uppercase"
             />
           </div>
+
           <p className="text-xs text-gray-500 mt-1">
-            Demo code: <span className="font-medium">{DEMO_STUDENT_CODE}</span>
+            Ask your school administrator for your child’s student code.
           </p>
         </div>
       )}

@@ -85,7 +85,7 @@ const Students = () => {
     const lastCode = lastName.slice(0, 3).toUpperCase();
     const classCode = String(studentClass).padStart(2, "0");
 
-    const code = `${schoolCode}-${firstCode}-${lastCode}-${classCode}`;
+    const code = `${schoolCode}${firstCode}${lastCode}${classCode}`;
 
     setFormData((prev) => ({ ...prev, code }));
   };
@@ -226,10 +226,11 @@ const Students = () => {
           <input
             type="text"
             name="code"
-            placeholder="Student Code"
+            placeholder="Generate the student code"
             value={formData.code}
-            onChange={handleChange}
-            className="border p-2 rounded w-full"
+            readOnly
+            required
+            className="border p-2 rounded w-full bg-gray-100 cursor-not-allowed uppercase"
           />
 
           <button
