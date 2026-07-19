@@ -194,11 +194,18 @@ const Footer = () => {
 
       {/* Floating scroll-to-top button */}
       <button
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-2xl transform hover:scale-110 transition-all duration-200 z-50"
+        type="button"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="fixed bottom-6 right-6 z-50 h-16 w-16 overflow-hidden rounded-full bg-transparent p-0 shadow-2xl transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 sm:bottom-8 sm:right-8"
         aria-label="Scroll to top"
+        title="Back to top"
       >
-        <Bus className="w-6 h-6" />
+        <img
+          src="/appIcon.png"
+          alt=""
+          aria-hidden="true"
+          className="h-full w-full rounded-full object-cover"
+        />
       </button>
     </footer>
   );
