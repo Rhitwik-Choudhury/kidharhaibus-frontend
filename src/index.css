@@ -76,14 +76,30 @@ code {
 
 
 @layer base {
-    html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
-  * {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
     @apply border-border;
-    }
+  }
+
   body {
     @apply bg-background text-foreground;
-    }
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
 }

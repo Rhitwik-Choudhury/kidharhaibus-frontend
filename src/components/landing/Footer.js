@@ -148,14 +148,18 @@ const Footer = () => {
                 Get the latest updates on features, safety tips, and company news.
               </p>
             </div>
-            <div className="md:flex-1 md:max-w-md md:ml-8">
-              <div className="flex">
+            <div className="w-full min-w-0 md:flex-1 md:max-w-md md:ml-8">
+              <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:gap-0">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-l-lg focus:outline-none focus:border-blue-500 text-white"
+                  className="min-w-0 w-full flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-r-none focus:outline-none focus:border-blue-500 text-white"
                 />
-                <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-r-lg font-medium transition-colors duration-200">
+
+                <button
+                  type="button"
+                  className="shrink-0 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg sm:rounded-l-none font-medium transition-colors duration-200"
+                >
                   Subscribe
                 </button>
               </div>
