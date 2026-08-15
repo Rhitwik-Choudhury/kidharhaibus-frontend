@@ -199,7 +199,16 @@ const Footer = () => {
       {/* Floating scroll-to-top button */}
       <button
         type="button"
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onClick={() => {
+          const homeSection = document.getElementById("home");
+
+          if (homeSection) {
+            homeSection.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }}
         className="fixed bottom-6 right-6 z-50 h-16 w-16 overflow-hidden rounded-full bg-transparent p-0 shadow-2xl transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 sm:bottom-8 sm:right-8"
         aria-label="Scroll to top"
         title="Back to top"
