@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 
 const API_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
-  (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) ||
-  'http://localhost:5000';
+  (typeof process !== 'undefined' &&
+    process.env &&
+    process.env.REACT_APP_API_URL) ||
+  'https://api.trackefy.in/api';
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({
