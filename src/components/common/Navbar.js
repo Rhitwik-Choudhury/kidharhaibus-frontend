@@ -31,12 +31,17 @@ const Navbar = () => {
       <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center">
         <div className="flex items-center justify-between px-8 py-4 w-[90%] max-w-4xl bg-white/30 backdrop-blur-lg border border-white/40 shadow-xl rounded-3xl">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => scrollToSection('home')}
+            className="flex items-center space-x-2 cursor-pointer bg-transparent border-0 p-0"
+            aria-label="Go to top"
+          >
             <Bus className="h-6 w-6 text-black" />
             <span className="text-xl font-bold text-black">
               Trackefy
             </span>
-          </div>
+          </button>
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-6">
