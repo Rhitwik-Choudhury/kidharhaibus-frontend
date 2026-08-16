@@ -12,16 +12,16 @@ import {
 const FeatureHighlights = () => {
   const features = [
     {
-      icon: MapPin,
-      title: 'Real-Time Location',
-      description: 'Track your child\'s bus location in real-time with GPS precision and live updates every 30 seconds.',
+      icon: Route,
+      title: 'Real-Time Bus Tracking',
+      description: 'Follow your child\'s school bus live throughout the journey with continuously updated GPS location.',
       color: 'bg-green-100 text-green-600',
       delay: 'delay-0'
     },
     {
       icon: Shield,
-      title: 'Geofence Alerts',
-      description: 'Automatic notifications when the bus enters or leaves designated safe zones around stops and school.',
+      title: 'Arrival Alerts',
+      description: 'Receive notifications when the bus is approaching your selected pickup location and when it arrives.',
       color: 'bg-blue-100 text-blue-600',
       delay: 'delay-100'
     },
@@ -35,14 +35,14 @@ const FeatureHighlights = () => {
     {
       icon: Route,
       title: 'Trip Monitoring',
-      description: 'Complete journey tracking from pickup to drop-off with detailed logs and performance analytics.',
+      description: 'Monitor the school bus journey from trip start to trip end with live location and trip status updates.',
       color: 'bg-purple-100 text-purple-600',
       delay: 'delay-300'
     },
     {
-      icon: Users,
-      title: 'Attendance Tracking',
-      description: 'Automated attendance marking with student boarding and alighting verification using smart sensors.',
+      icon: MapPin,
+      title: 'Custom Pickup Location',
+      description: 'Parents can set their pickup location so Trackefy can provide more relevant arrival updates and notifications.',
       color: 'bg-orange-100 text-orange-600',
       delay: 'delay-400'
     },
@@ -63,8 +63,8 @@ const FeatureHighlights = () => {
             Powerful Features
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Comprehensive safety and tracking features designed to give parents peace of mind 
-            and schools complete control over their transportation operations.
+            Smart tracking and timely alerts designed to give parents peace of mind 
+            and help schools manage transportation more effectively.
           </p>
         </div>
 
