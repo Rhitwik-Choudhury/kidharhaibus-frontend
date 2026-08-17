@@ -8,7 +8,6 @@ import {
   Bus,
   Map,
   AlertTriangle,
-  Settings,
   Trash2,
   ChevronLeft,
   ChevronRight,
@@ -23,7 +22,6 @@ const navItems = [
   { name: "Buses", path: "/school/buses", icon: Bus },
   { name: "Trips", path: "/school/trips", icon: Map },
   { name: "Alerts", path: "/school/alerts", icon: AlertTriangle },
-  { name: "Settings", path: "/school/settings", icon: Settings },
   { name: "Delete Account", path: "/delete-account", icon: Trash2, external: true },
 ];
 

@@ -18,6 +18,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useAuth } from "../../context/AuthContext"; // Importing AuthContext
+import { useNavigate } from "react-router-dom";
 
 const stats = [
   {
@@ -59,6 +60,8 @@ const chartData = stats.slice(0, 3).map((stat) => ({
 
 const Overview = () => {
   const { user } = useAuth(); // Access user info from context
+  const navigate = useNavigate();
+
   console.log("User from AuthContext:", user);
 
   const schoolName = user?.schoolName || "Overview";
@@ -230,17 +233,17 @@ const Overview = () => {
           {
             label: "Add Student",
             color: "bg-blue-600",
-            action: () => alert("Add Student"),
+            action: () => navigate("/school/students"),
           },
           {
             label: "Assign Driver",
             color: "bg-green-600",
-            action: () => alert("Assign Driver"),
+            action: () => navigate("/school/buses"),
           },
           {
             label: "Add New Bus",
             color: "bg-yellow-500",
-            action: () => alert("Add Bus"),
+            action: () => navigate("/school/buses"),
           },
         ].map((item, index) => (
           <motion.button

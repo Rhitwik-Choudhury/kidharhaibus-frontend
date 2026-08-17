@@ -9,7 +9,6 @@ import Drivers from './Drivers';
 import Buses from './Buses';
 import Trips from './Trips';
 import Alerts from './Alerts';
-import Settings from './Settings';
 
 const schoolRoutes = (
   <Route path="/school" element={<DashboardLayout />}>
@@ -19,7 +18,6 @@ const schoolRoutes = (
     <Route path="buses" element={<Buses />} />
     <Route path="trips" element={<Trips />} />
     <Route path="alerts" element={<Alerts />} />
-    <Route path="settings" element={<Settings />} />
     <Route index element={<Navigate to="dashboard" />} />
   </Route>
 );
