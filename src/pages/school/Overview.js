@@ -1,12 +1,14 @@
 // src/pages/school/Overview.js
+
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Users,
   User,
   Bus,
   Map,
-  AlertTriangle,
   Copy,
+  RefreshCw,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -17,59 +19,103 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { useAuth } from "../../context/AuthContext"; // Importing AuthContext
+
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-const stats = [
-  {
-    title: "Total Students",
-    value: 128,
-    icon: <Users className="w-6 h-6 text-blue-700" />,
-    color: "bg-blue-100",
-  },
-  {
-    title: "Total Drivers",
-    value: 12,
-    icon: <User className="w-6 h-6 text-green-700" />,
-    color: "bg-green-100",
-  },
-  {
-    title: "Total Buses",
-    value: 15,
-    icon: <Bus className="w-6 h-6 text-yellow-700" />,
-    color: "bg-yellow-100",
-  },
-  {
-    title: "Trips Today",
-    value: 26,
-    icon: <Map className="w-6 h-6 text-purple-700" />,
-    color: "bg-purple-100",
-  },
-  {
-    title: "Active Alerts",
-    value: 3,
-    icon: <AlertTriangle className="w-6 h-6 text-red-700" />,
-    color: "bg-red-100",
-  },
-];
-
-const chartData = stats.slice(0, 3).map((stat) => ({
-  name: stat.title.replace("Total ", ""),
-  count: stat.value,
-}));
+import { schoolDashboardAPI } from "../../services/api";
 
 const Overview = () => {
-  const { user } = useAuth(); // Access user info from context
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  console.log("User from AuthContext:", user);
 
   const schoolName = user?.schoolName || "Overview";
   const schoolCode = user?.schoolCode || "Not available";
 
+  const [dashboardStats, setDashboardStats] = useState({
+    totalStudents: 0,
+    totalDrivers: 0,
+    totalBuses: 0,
+    activeTrips: 0,
+  });
+
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+
+  // =========================================================
+  // Fetch live dashboard statistics
+  // =========================================================
+  const fetchDashboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      setStatsError("");
+
+      const response = await schoolDashboardAPI.getStats();
+
+      setDashboardStats({
+        totalStudents: response.data?.totalStudents ?? 0,
+        totalDrivers: response.data?.totalDrivers ?? 0,
+        totalBuses: response.data?.totalBuses ?? 0,
+        activeTrips: response.data?.activeTrips ?? 0,
+      });
+    } catch (error) {
+      console.error("Failed to fetch dashboard stats:", error);
+
+      setStatsError(
+        error.response?.data?.message ||
+          "Could not load dashboard statistics."
+      );
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  // =========================================================
+  // Dashboard cards
+  // =========================================================
+  const stats = [
+    {
+      title: "Total Students",
+      value: dashboardStats.totalStudents,
+      icon: <Users className="w-6 h-6 text-blue-700" />,
+      color: "bg-blue-100",
+    },
+    {
+      title: "Total Drivers",
+      value: dashboardStats.totalDrivers,
+      icon: <User className="w-6 h-6 text-green-700" />,
+      color: "bg-green-100",
+    },
+    {
+      title: "Total Buses",
+      value: dashboardStats.totalBuses,
+      icon: <Bus className="w-6 h-6 text-yellow-700" />,
+      color: "bg-yellow-100",
+    },
+    {
+      title: "Active Trips",
+      value: dashboardStats.activeTrips,
+      icon: <Map className="w-6 h-6 text-purple-700" />,
+      color: "bg-purple-100",
+    },
+  ];
+
+  const chartData = stats.slice(0, 3).map((stat) => ({
+    name: stat.title.replace("Total ", ""),
+    count: stat.value,
+  }));
+
+  // =========================================================
+  // Copy school code
+  // =========================================================
   const handleCopySchoolCode = async () => {
     if (!user?.schoolCode) {
-      alert("School code is not available. Please log out and log in again.");
+      alert(
+        "School code is not available. Please log out and log in again."
+      );
       return;
     }
 
@@ -82,11 +128,56 @@ const Overview = () => {
     }
   };
 
+  // =========================================================
+  // Quick actions
+  // =========================================================
+  const quickActions = [
+    {
+      label: "Add Student",
+      color: "bg-blue-600 hover:bg-blue-700",
+      action: () => navigate("/school/students"),
+    },
+    {
+      label: "Assign Driver",
+      color: "bg-green-600 hover:bg-green-700",
+      action: () => navigate("/school/buses"),
+    },
+    {
+      label: "Add New Bus",
+      color: "bg-yellow-500 hover:bg-yellow-600",
+      action: () => navigate("/school/buses"),
+    },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <h1 className="text-2xl font-semibold mb-4">{schoolName}</h1>
+      {/* =====================================================
+          Header
+      ====================================================== */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {schoolName}
+        </h1>
 
-      {/* School Code Card */}
+        <button
+          type="button"
+          onClick={fetchDashboardStats}
+          disabled={statsLoading}
+          className="inline-flex items-center justify-center gap-2 self-start sm:self-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <RefreshCw
+            className={`w-4 h-4 ${
+              statsLoading ? "animate-spin" : ""
+            }`}
+          />
+
+          {statsLoading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
+
+      {/* =====================================================
+          School Code Card
+      ====================================================== */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-blue-700">
@@ -98,7 +189,8 @@ const Overview = () => {
           </p>
 
           <p className="text-xs text-blue-600 mt-1">
-            Share this code with drivers during signup so they can join your school.
+            Share this code with drivers during signup so they can join
+            your school.
           </p>
         </div>
 
@@ -113,22 +205,52 @@ const Overview = () => {
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+      {/* =====================================================
+          Stats Error
+      ====================================================== */}
+      {statsError && (
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700">
+            {statsError}
+          </p>
+
+          <button
+            type="button"
+            onClick={fetchDashboardStats}
+            className="text-sm font-semibold text-red-700 hover:text-red-900"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* =====================================================
+          Stats Cards
+      ====================================================== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {stats.map((stat, index) => (
           <motion.div
-            key={index}
-            className="flex items-center justify-between bg-white shadow-md rounded-lg p-4 transition-all duration-300 hover:-translate-y-3 hover:shadow-2xl hover:ring-4 hover:ring-blue-400"
+            key={stat.title}
+            className="flex items-center justify-between bg-white shadow-md rounded-lg p-4 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:ring-2 hover:ring-blue-300"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
+            transition={{
+              duration: 0.3,
+              delay: index * 0.08,
+            }}
           >
             <div className="flex flex-col min-w-0">
-              <span className="text-sm text-gray-500">{stat.title}</span>
-              <span className="text-xl font-bold truncate">{stat.value}</span>
+              <span className="text-sm text-gray-500">
+                {stat.title}
+              </span>
+
+              <span className="text-2xl font-bold text-gray-900 truncate mt-1">
+                {statsLoading ? "—" : stat.value}
+              </span>
             </div>
+
             <div
-              className={`p-3 rounded-full ${stat.color} flex items-center justify-center ml-4`}
+              className={`p-3 rounded-full ${stat.color} flex items-center justify-center ml-4 flex-shrink-0`}
             >
               {stat.icon}
             </div>
@@ -136,120 +258,93 @@ const Overview = () => {
         ))}
       </div>
 
-      {/* Bar Chart */}
+      {/* =====================================================
+          Bar Chart
+      ====================================================== */}
       <div className="bg-white p-6 rounded-lg shadow w-full mb-10">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">
-          Key Metrics Overview
-        </h2>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700">
+              Key Metrics Overview
+            </h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Current students, drivers and buses registered with your
+              school.
+            </p>
+          </div>
+        </div>
+
         <div className="w-full h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {statsLoading ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-gray-400">
+                Loading metrics...
+              </p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+
+                <XAxis dataKey="name" />
+
+                <YAxis
+                  allowDecimals={false}
+                  domain={[0, "auto"]}
+                />
+
+                <Tooltip />
+
+                <Bar
+                  dataKey="count"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
-      {/* Trip History */}
+      {/* =====================================================
+          Trip History Placeholder
+      ====================================================== */}
       <div className="bg-white p-6 mt-6 rounded-lg shadow w-full mb-10">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">
           Recent Trip History
         </h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm text-left text-gray-600">
-            <thead className="bg-gray-100 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Bus</th>
-                <th className="px-4 py-2">Driver</th>
-                <th className="px-4 py-2">Route</th>
-                <th className="px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {[
-                {
-                  date: "2025-07-28",
-                  bus: "Bus 12",
-                  driver: "Ravi Sharma",
-                  route: "Sector 5 → DPS",
-                  status: "Completed",
-                },
-                {
-                  date: "2025-07-28",
-                  bus: "Bus 08",
-                  driver: "Neha Das",
-                  route: "Ring Road → SJS",
-                  status: "Delayed",
-                },
-                {
-                  date: "2025-07-27",
-                  bus: "Bus 15",
-                  driver: "Arjun Mehta",
-                  route: "City Center → St. Mary's",
-                  status: "Completed",
-                },
-                {
-                  date: "2025-07-27",
-                  bus: "Bus 03",
-                  driver: "Kabir Roy",
-                  route: "Kabra Lane → DAV",
-                  status: "Missed",
-                },
-              ].map((trip, idx) => (
-                <tr key={idx} className="hover:bg-gray-50">
-                  <td className="px-4 py-2">{trip.date}</td>
-                  <td className="px-4 py-2">{trip.bus}</td>
-                  <td className="px-4 py-2">{trip.driver}</td>
-                  <td className="px-4 py-2">{trip.route}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        trip.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : trip.status === "Delayed"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {trip.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="flex min-h-[150px] items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50">
+          <div className="text-center px-4 py-6">
+            <Map className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+
+            <p className="font-medium text-gray-600">
+              Trip history will appear here
+            </p>
+
+            <p className="mt-1 text-sm text-gray-400 max-w-md">
+              Completed school bus trips will be displayed once trip
+              history tracking is available.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <h2 className="text-lg font-semibold mb-4 mt-10">Quick Actions</h2>
+      {/* =====================================================
+          Quick Actions
+      ====================================================== */}
+      <h2 className="text-lg font-semibold mb-4 mt-10 text-gray-800">
+        Quick Actions
+      </h2>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-4">
-        {[
-          {
-            label: "Add Student",
-            color: "bg-blue-600",
-            action: () => navigate("/school/students"),
-          },
-          {
-            label: "Assign Driver",
-            color: "bg-green-600",
-            action: () => navigate("/school/buses"),
-          },
-          {
-            label: "Add New Bus",
-            color: "bg-yellow-500",
-            action: () => navigate("/school/buses"),
-          },
-        ].map((item, index) => (
+        {quickActions.map((item) => (
           <motion.button
-            key={index}
+            key={item.label}
+            type="button"
             onClick={item.action}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             className={`text-white font-medium py-4 rounded-lg transition-all ${item.color} hover:shadow-xl`}
           >

@@ -70,6 +70,10 @@ export const authAPI = {
   logout: () => apiClient.post('/auth/logout'),
 };
 
+export const schoolDashboardAPI = {
+  getStats: () => apiClient.get('/school/dashboard-stats'),
+};
+
 export const studentsAPI = {
   getStudents: (params = {}) => apiClient.get('/school/students', { params }),
   getStudent: (studentId) => apiClient.get(`/school/students/${studentId}`),
