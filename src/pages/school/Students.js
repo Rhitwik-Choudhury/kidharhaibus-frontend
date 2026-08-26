@@ -6,10 +6,12 @@ import {
   ArrowUpDown,
   X,
   Plus,
-  ChevronDown,
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Check,
+  UserPlus,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -21,7 +23,13 @@ const Students = () => {
   const formSectionRef = useRef(null);
 
   // =========================================================
-  // Student form
+  // Main data
+  // =========================================================
+  const [students, setStudents] = useState([]);
+  const [buses, setBuses] = useState([]);
+
+  // =========================================================
+  // Form
   // =========================================================
   const [formData, setFormData] = useState({
     name: "",
@@ -32,11 +40,13 @@ const Students = () => {
     code: "",
   });
 
-  const [students, setStudents] = useState([]);
-  const [buses, setBuses] = useState([]);
-
   const [editingId, setEditingId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  // =========================================================
+  // Copy feedback
+  // =========================================================
+  const [copiedCode, setCopiedCode] = useState("");
 
   // =========================================================
   // Search / filter / sort
@@ -121,7 +131,7 @@ const Students = () => {
 
     if (!schoolName || !name || !studentClass) {
       alert(
-        "Enter school name, student name, and class first."
+        "Enter the student name and class before generating the student code."
       );
       return;
     }
@@ -150,10 +160,9 @@ const Students = () => {
       .slice(0, 3)
       .toUpperCase();
 
-    const classCode = String(studentClass).padStart(
-      2,
-      "0"
-    );
+    const classCode = String(
+      studentClass
+    ).padStart(2, "0");
 
     const code =
       `${schoolCode}${firstCode}${lastCode}${classCode}`;
@@ -162,6 +171,32 @@ const Students = () => {
       ...prev,
       code,
     }));
+  };
+
+  // =========================================================
+  // Copy student code
+  // =========================================================
+  const handleCopyCode = async (code) => {
+    if (!code) return;
+
+    try {
+      await navigator.clipboard.writeText(code);
+
+      setCopiedCode(code);
+
+      setTimeout(() => {
+        setCopiedCode("");
+      }, 1800);
+    } catch (error) {
+      console.error(
+        "Failed to copy student code:",
+        error
+      );
+
+      alert(
+        "Could not copy the student code."
+      );
+    }
   };
 
   // =========================================================
@@ -201,7 +236,7 @@ const Students = () => {
         behavior: "smooth",
         block: "start",
       });
-    }, 50);
+    }, 100);
   };
 
   // =========================================================
@@ -228,8 +263,8 @@ const Students = () => {
          * in the update payload.
          *
          * Student codes are permanent identifiers
-         * because parents may already be linked
-         * using the code.
+         * because parent accounts may already be
+         * linked using this code.
          */
         const updatePayload = {
           name: formData.name,
@@ -244,6 +279,13 @@ const Students = () => {
           updatePayload
         );
       } else {
+        if (!formData.code) {
+          alert(
+            "Please generate a student code before adding the student."
+          );
+          return;
+        }
+
         const createPayload = {
           name: formData.name,
           class: formData.studentClass,
@@ -266,7 +308,10 @@ const Students = () => {
       // Close form after successful Add / Update.
       setIsFormOpen(false);
     } catch (err) {
-      console.error("Error saving student:", err);
+      console.error(
+        "Error saving student:",
+        err
+      );
     }
   };
 
@@ -285,16 +330,16 @@ const Students = () => {
 
     setEditingId(student._id);
 
-    // Make sure the collapsible form is open.
+    // Make sure the form is open.
     setIsFormOpen(true);
 
-    // Wait for React to render the form before scrolling.
+    // Wait until React renders the form.
     setTimeout(() => {
       formSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
-    }, 100);
+    }, 120);
   };
 
   // =========================================================
@@ -316,7 +361,10 @@ const Students = () => {
         closeForm();
       }
     } catch (err) {
-      console.error("Delete failed:", err);
+      console.error(
+        "Delete failed:",
+        err
+      );
     }
   };
 
@@ -328,7 +376,9 @@ const Students = () => {
       ...new Set(
         students
           .map((student) =>
-            String(student.class || "").trim()
+            String(
+              student.class || ""
+            ).trim()
           )
           .filter(Boolean)
       ),
@@ -345,9 +395,13 @@ const Students = () => {
         return numberA - numberB;
       }
 
-      return a.localeCompare(b, undefined, {
-        numeric: true,
-      });
+      return a.localeCompare(
+        b,
+        undefined,
+        {
+          numeric: true,
+        }
+      );
     });
   }, [students]);
 
@@ -359,135 +413,164 @@ const Students = () => {
       .trim()
       .toLowerCase();
 
-    let result = students.filter((student) => {
-      const matchesSearch =
-        !query ||
-        student.name
-          ?.toLowerCase()
-          .includes(query) ||
-        String(student.roll || "")
-          .toLowerCase()
-          .includes(query) ||
-        student.studentCode
-          ?.toLowerCase()
-          .includes(query) ||
-        String(student.class || "")
-          .toLowerCase()
-          .includes(query) ||
-        student.busId?.busNumber
-          ?.toLowerCase()
-          .includes(query);
+    let result = students.filter(
+      (student) => {
+        const busNumber =
+          student.busId?.busNumber || "";
 
-      const matchesClass =
-        !classFilter ||
-        String(student.class) === classFilter;
+        const matchesSearch =
+          !query ||
+          student.name
+            ?.toLowerCase()
+            .includes(query) ||
+          String(
+            student.roll || ""
+          )
+            .toLowerCase()
+            .includes(query) ||
+          student.studentCode
+            ?.toLowerCase()
+            .includes(query) ||
+          String(
+            student.class || ""
+          )
+            .toLowerCase()
+            .includes(query) ||
+          String(busNumber)
+            .toLowerCase()
+            .includes(query);
 
-      const matchesBus =
-        !busFilter ||
-        String(student.busId?._id || "") ===
-          busFilter;
+        const matchesClass =
+          !classFilter ||
+          String(student.class) ===
+            classFilter;
 
-      return (
-        matchesSearch &&
-        matchesClass &&
-        matchesBus
-      );
-    });
+        const matchesBus =
+          !busFilter ||
+          String(
+            student.busId?._id || ""
+          ) === busFilter;
 
-    result = [...result].sort((a, b) => {
-      switch (sortBy) {
-        case "name-desc":
-          return (b.name || "").localeCompare(
-            a.name || "",
-            undefined,
-            {
-              sensitivity: "base",
-            }
-          );
-
-        case "class-asc":
-          return String(
-            a.class || ""
-          ).localeCompare(
-            String(b.class || ""),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base",
-            }
-          );
-
-        case "class-desc":
-          return String(
-            b.class || ""
-          ).localeCompare(
-            String(a.class || ""),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base",
-            }
-          );
-
-        case "roll-asc":
-          return String(
-            a.roll || ""
-          ).localeCompare(
-            String(b.roll || ""),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base",
-            }
-          );
-
-        case "roll-desc":
-          return String(
-            b.roll || ""
-          ).localeCompare(
-            String(a.roll || ""),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base",
-            }
-          );
-
-        case "bus-asc":
-          return String(
-            a.busId?.busNumber || ""
-          ).localeCompare(
-            String(b.busId?.busNumber || ""),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base",
-            }
-          );
-
-        case "bus-desc":
-          return String(
-            b.busId?.busNumber || ""
-          ).localeCompare(
-            String(a.busId?.busNumber || ""),
-            undefined,
-            {
-              numeric: true,
-              sensitivity: "base",
-            }
-          );
-
-        case "name-asc":
-        default:
-          return (a.name || "").localeCompare(
-            b.name || "",
-            undefined,
-            {
-              sensitivity: "base",
-            }
-          );
+        return (
+          matchesSearch &&
+          matchesClass &&
+          matchesBus
+        );
       }
-    });
+    );
+
+    result = [...result].sort(
+      (a, b) => {
+        switch (sortBy) {
+          case "name-desc":
+            return (
+              b.name || ""
+            ).localeCompare(
+              a.name || "",
+              undefined,
+              {
+                sensitivity: "base",
+              }
+            );
+
+          case "class-asc":
+            return String(
+              a.class || ""
+            ).localeCompare(
+              String(
+                b.class || ""
+              ),
+              undefined,
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+
+          case "class-desc":
+            return String(
+              b.class || ""
+            ).localeCompare(
+              String(
+                a.class || ""
+              ),
+              undefined,
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+
+          case "roll-asc":
+            return String(
+              a.roll || ""
+            ).localeCompare(
+              String(
+                b.roll || ""
+              ),
+              undefined,
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+
+          case "roll-desc":
+            return String(
+              b.roll || ""
+            ).localeCompare(
+              String(
+                a.roll || ""
+              ),
+              undefined,
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+
+          case "bus-asc":
+            return String(
+              a.busId?.busNumber || ""
+            ).localeCompare(
+              String(
+                b.busId?.busNumber || ""
+              ),
+              undefined,
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+
+          case "bus-desc":
+            return String(
+              b.busId?.busNumber || ""
+            ).localeCompare(
+              String(
+                a.busId?.busNumber || ""
+              ),
+              undefined,
+              {
+                numeric: true,
+                sensitivity: "base",
+              }
+            );
+
+          case "name-asc":
+          default:
+            return (
+              a.name || ""
+            ).localeCompare(
+              b.name || "",
+              undefined,
+              {
+                sensitivity: "base",
+              }
+            );
+        }
+      }
+    );
 
     return result;
   }, [
@@ -499,7 +582,7 @@ const Students = () => {
   ]);
 
   // =========================================================
-  // Reset page when search/filter/sort/page size changes
+  // Reset pagination when filters change
   // =========================================================
   useEffect(() => {
     setCurrentPage(1);
@@ -512,7 +595,7 @@ const Students = () => {
   ]);
 
   // =========================================================
-  // Pagination calculations
+  // Pagination
   // =========================================================
   const totalFilteredStudents =
     filteredStudents.length;
@@ -553,12 +636,14 @@ const Students = () => {
   );
 
   // =========================================================
-  // Pagination page-number helper
+  // Page numbers
   // =========================================================
   const getPageNumbers = () => {
     if (totalPages <= 7) {
       return Array.from(
-        { length: totalPages },
+        {
+          length: totalPages,
+        },
         (_, index) => index + 1
       );
     }
@@ -575,7 +660,10 @@ const Students = () => {
       ];
     }
 
-    if (currentPage >= totalPages - 3) {
+    if (
+      currentPage >=
+      totalPages - 3
+    ) {
       return [
         1,
         "...",
@@ -598,6 +686,9 @@ const Students = () => {
     ];
   };
 
+  // =========================================================
+  // Filters
+  // =========================================================
   const filtersActive =
     searchTerm ||
     classFilter ||
@@ -623,9 +714,9 @@ const Students = () => {
             Students
           </h1>
 
-          <p className="text-sm text-gray-500 mt-1">
-            Manage students registered with
-            your school.
+          <p className="text-sm text-gray-600 mt-1">
+            Manage students registered
+            with your school.
           </p>
         </div>
 
@@ -636,16 +727,21 @@ const Students = () => {
               ? closeForm
               : handleOpenAddStudent
           }
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
         >
-          {isFormOpen && !editingId ? (
+          {isFormOpen &&
+          !editingId ? (
             <>
-              <ChevronUp size={18} />
+              <ChevronUp
+                size={18}
+              />
+
               Close Form
             </>
           ) : (
             <>
               <Plus size={18} />
+
               Add Student
             </>
           )}
@@ -661,192 +757,344 @@ const Students = () => {
           className="scroll-mt-6 mb-8"
           initial={{
             opacity: 0,
-            height: 0,
+            y: -10,
           }}
           animate={{
             opacity: 1,
-            height: "auto",
+            y: 0,
           }}
           transition={{
             duration: 0.25,
           }}
         >
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            {/* Form header */}
-            <div className="flex items-center justify-between gap-4 border-b border-gray-200 px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {editingId
-                    ? "Edit Student"
-                    : "Add New Student"}
-                </h2>
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+            {/* ================= FORM HEADER ================= */}
+            <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                    <UserPlus
+                      size={21}
+                    />
+                  </div>
 
-                <p className="text-sm text-gray-500 mt-1">
-                  {editingId
-                    ? "Update the student's information below."
-                    : "Enter the student's information to add them to the school."}
-                </p>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {editingId
+                        ? "Edit Student Details"
+                        : "Add New Student"}
+                    </h2>
+
+                    <p className="mt-1 text-sm leading-5 text-gray-600">
+                      {editingId
+                        ? "Update the student's information below. The student code will remain unchanged."
+                        : "Enter the student's details below to register them with your school."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="rounded-lg p-2 text-gray-500 transition hover:bg-white hover:text-gray-800 hover:shadow-sm"
+                  aria-label="Close form"
+                >
+                  <X size={20} />
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={closeForm}
-                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                aria-label="Close form"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             <form
-              className="p-6 space-y-4"
+              className="p-6"
               onSubmit={handleSubmit}
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Student Name
-                  </label>
-
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Enter student name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="border border-gray-300 p-2.5 rounded-lg w-full outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Class
-                  </label>
-
-                  <input
-                    type="text"
-                    name="studentClass"
-                    placeholder="e.g. 06"
-                    value={
-                      formData.studentClass
-                    }
-                    onChange={handleChange}
-                    className="border border-gray-300 p-2.5 rounded-lg w-full outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Roll Number
-                  </label>
-
-                  <input
-                    type="number"
-                    name="rollNumber"
-                    placeholder="Enter roll number"
-                    value={
-                      formData.rollNumber
-                    }
-                    onChange={handleChange}
-                    className="border border-gray-300 p-2.5 rounded-lg w-full outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Bus
-                  </label>
-
-                  <select
-                    name="busId"
-                    value={formData.busId}
-                    onChange={handleChange}
-                    className="border border-gray-300 p-2.5 rounded-lg w-full bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    required
-                  >
-                    <option value="">
-                      Select Bus
-                    </option>
-
-                    {buses.map((bus) => (
-                      <option
-                        key={bus._id}
-                        value={bus._id}
-                      >
-                        {bus.busNumber}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Address */}
+              {/* ================= STUDENT INFORMATION ================= */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Address
-                </label>
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+                    Student Information
+                  </h3>
 
-                <textarea
-                  name="address"
-                  placeholder="Enter address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  rows={3}
-                  className="border border-gray-300 p-2.5 rounded-lg w-full resize-y outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  required
-                />
-              </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Basic academic and
+                    transport information
+                    for this student.
+                  </p>
+                </div>
 
-              {/* Student Code */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Student Code
-                </label>
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="text"
-                    name="code"
-                    placeholder="Generate the student code"
-                    value={formData.code}
-                    readOnly
-                    required
-                    className="border border-gray-300 p-2.5 rounded-lg w-full bg-gray-100 cursor-not-allowed uppercase"
-                  />
-
-                  {!editingId && (
-                    <button
-                      type="button"
-                      onClick={
-                        generateStudentCode
-                      }
-                      className="border border-gray-300 bg-gray-100 px-4 py-2.5 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm font-medium text-gray-700"
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  {/* Name */}
+                  <div>
+                    <label
+                      htmlFor="student-name"
+                      className="mb-1.5 block text-sm font-semibold text-gray-800"
                     >
-                      Generate Code
-                    </button>
+                      Student Name
+
+                      <span className="ml-1 text-red-500">
+                        *
+                      </span>
+                    </label>
+
+                    <input
+                      id="student-name"
+                      type="text"
+                      name="name"
+                      placeholder="e.g. Rahul Sharma"
+                      value={
+                        formData.name
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  {/* Class */}
+                  <div>
+                    <label
+                      htmlFor="student-class"
+                      className="mb-1.5 block text-sm font-semibold text-gray-800"
+                    >
+                      Class
+
+                      <span className="ml-1 text-red-500">
+                        *
+                      </span>
+                    </label>
+
+                    <input
+                      id="student-class"
+                      type="text"
+                      name="studentClass"
+                      placeholder="e.g. 06"
+                      value={
+                        formData.studentClass
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  {/* Roll Number */}
+                  <div>
+                    <label
+                      htmlFor="student-roll"
+                      className="mb-1.5 block text-sm font-semibold text-gray-800"
+                    >
+                      Roll Number
+
+                      <span className="ml-1 text-red-500">
+                        *
+                      </span>
+                    </label>
+
+                    <input
+                      id="student-roll"
+                      type="number"
+                      name="rollNumber"
+                      placeholder="e.g. 24"
+                      value={
+                        formData.rollNumber
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      required
+                    />
+                  </div>
+
+                  {/* Bus */}
+                  <div>
+                    <label
+                      htmlFor="student-bus"
+                      className="mb-1.5 block text-sm font-semibold text-gray-800"
+                    >
+                      Assigned Bus
+
+                      <span className="ml-1 text-red-500">
+                        *
+                      </span>
+                    </label>
+
+                    <select
+                      id="student-bus"
+                      name="busId"
+                      value={
+                        formData.busId
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      required
+                    >
+                      <option value="">
+                        Select a bus
+                      </option>
+
+                      {buses.map(
+                        (bus) => (
+                          <option
+                            key={
+                              bus._id
+                            }
+                            value={
+                              bus._id
+                            }
+                          >
+                            {
+                              bus.busNumber
+                            }
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div className="mt-5">
+                  <label
+                    htmlFor="student-address"
+                    className="mb-1.5 block text-sm font-semibold text-gray-800"
+                  >
+                    Address
+
+                    <span className="ml-1 text-red-500">
+                      *
+                    </span>
+                  </label>
+
+                  <textarea
+                    id="student-address"
+                    name="address"
+                    placeholder="Enter the student's residential address"
+                    value={
+                      formData.address
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    rows={3}
+                    className="w-full resize-y rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* ================= DIVIDER ================= */}
+              <div className="my-6 border-t border-gray-200" />
+
+              {/* ================= STUDENT CODE ================= */}
+              <div>
+                <div className="mb-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+                    Student Identification
+                  </h3>
+                </div>
+
+                <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+                  <label
+                    htmlFor="student-code"
+                    className="mb-1.5 block text-sm font-semibold text-gray-800"
+                  >
+                    Student Code
+                  </label>
+
+                  <p className="mb-3 text-xs leading-5 text-gray-600">
+                    {editingId
+                      ? "This permanent code identifies the student and may already be linked with a parent account. It cannot be changed."
+                      : "Generate the unique student code after entering the student's name and class."}
+                  </p>
+
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      id="student-code"
+                      type="text"
+                      name="code"
+                      placeholder="Student code will appear here"
+                      value={
+                        formData.code
+                      }
+                      readOnly
+                      required
+                      className="w-full rounded-lg border border-blue-200 bg-white px-3.5 py-2.5 font-mono text-sm font-bold tracking-wide text-blue-800 placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-500 outline-none"
+                    />
+
+                    {!editingId && (
+                      <button
+                        type="button"
+                        onClick={
+                          generateStudentCode
+                        }
+                        className="whitespace-nowrap rounded-lg border border-blue-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50"
+                      >
+                        Generate Code
+                      </button>
+                    )}
+
+                    {formData.code && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopyCode(
+                            formData.code
+                          )
+                        }
+                        className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                      >
+                        {copiedCode ===
+                        formData.code ? (
+                          <>
+                            <Check
+                              size={17}
+                            />
+
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy
+                              size={17}
+                            />
+
+                            Copy Code
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {editingId && (
+                    <div className="mt-3 rounded-lg border border-blue-100 bg-white/70 px-3 py-2">
+                      <p className="text-xs font-medium text-blue-700">
+                        This code is
+                        locked and will
+                        remain unchanged
+                        when the student
+                        details are
+                        updated.
+                      </p>
+                    </div>
                   )}
                 </div>
-
-                {editingId && (
-                  <p className="text-xs text-gray-500 mt-1.5">
-                    Student code cannot be
-                    changed after the student
-                    has been created.
-                  </p>
-                )}
               </div>
 
-              {/* Form actions */}
-              <div className="flex flex-wrap gap-3 pt-2">
+              {/* ================= FORM ACTIONS ================= */}
+              <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-5">
                 <motion.button
                   type="submit"
                   whileTap={{
                     scale: 0.98,
                   }}
-                  className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 font-medium"
+                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                 >
                   {editingId
                     ? "Update Student"
@@ -856,10 +1104,19 @@ const Students = () => {
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="border border-gray-300 bg-white text-gray-700 px-6 py-2.5 rounded-lg hover:bg-gray-50 font-medium"
+                  className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                 >
                   Cancel
                 </button>
+
+                {editingId && (
+                  <span className="text-xs text-gray-500">
+                    Updating the
+                    student will not
+                    change their
+                    Student Code.
+                  </span>
+                )}
               </div>
             </form>
           </div>
@@ -905,7 +1162,7 @@ const Students = () => {
                   )
                 }
                 placeholder="Search by name, roll number, class, bus or student code..."
-                className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-gray-900 placeholder:text-gray-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
@@ -933,7 +1190,7 @@ const Students = () => {
                       e.target.value
                     )
                   }
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-sm font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">
                     All Classes
@@ -964,20 +1221,22 @@ const Students = () => {
                       e.target.value
                     )
                   }
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-sm font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
                   <option value="">
                     All Buses
                   </option>
 
-                  {buses.map((bus) => (
-                    <option
-                      key={bus._id}
-                      value={bus._id}
-                    >
-                      {bus.busNumber}
-                    </option>
-                  ))}
+                  {buses.map(
+                    (bus) => (
+                      <option
+                        key={bus._id}
+                        value={bus._id}
+                      >
+                        {bus.busNumber}
+                      </option>
+                    )
+                  )}
                 </select>
 
                 {/* Sort */}
@@ -994,7 +1253,7 @@ const Students = () => {
                         e.target.value
                       )
                     }
-                    className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 bg-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 bg-white text-sm font-medium text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="name-asc">
                       Name: A → Z
@@ -1033,13 +1292,16 @@ const Students = () => {
                 {/* Clear */}
                 <button
                   type="button"
-                  onClick={clearFilters}
+                  onClick={
+                    clearFilters
+                  }
                   disabled={
                     !filtersActive
                   }
                   className="inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <X size={16} />
+
                   Clear Filters
                 </button>
               </div>
@@ -1055,23 +1317,29 @@ const Students = () => {
                   0 ? (
                     <>
                       Showing{" "}
+
                       <span className="font-medium text-gray-700">
                         {
                           firstVisibleStudent
                         }
                       </span>
+
                       –
+
                       <span className="font-medium text-gray-700">
                         {
                           lastVisibleStudent
                         }
                       </span>{" "}
+
                       of{" "}
+
                       <span className="font-medium text-gray-700">
                         {
                           totalFilteredStudents
                         }
                       </span>{" "}
+
                       students
                     </>
                   ) : (
@@ -1082,8 +1350,11 @@ const Students = () => {
                 {totalFilteredStudents !==
                   students.length && (
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {students.length} total
-                    students registered
+                    {
+                      students.length
+                    }{" "}
+                    total students
+                    registered
                   </p>
                 )}
               </div>
@@ -1101,20 +1372,29 @@ const Students = () => {
                   value={pageSize}
                   onChange={(e) =>
                     setPageSize(
-                      Number(e.target.value)
+                      Number(
+                        e.target
+                          .value
+                      )
                     )
                   }
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 outline-none focus:border-blue-500"
                 >
-                  <option value={25}>
+                  <option
+                    value={25}
+                  >
                     25
                   </option>
 
-                  <option value={50}>
+                  <option
+                    value={50}
+                  >
                     50
                   </option>
 
-                  <option value={100}>
+                  <option
+                    value={100}
+                  >
                     100
                   </option>
                 </select>
@@ -1133,9 +1413,9 @@ const Students = () => {
             </p>
 
             <p className="text-sm text-gray-400 mt-1">
-              Add your first student to
-              start building the school
-              directory.
+              Add your first student
+              to start building the
+              school directory.
             </p>
 
             <button
@@ -1146,6 +1426,7 @@ const Students = () => {
               className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
               <Plus size={16} />
+
               Add Student
             </button>
           </div>
@@ -1162,8 +1443,8 @@ const Students = () => {
             </p>
 
             <p className="text-sm text-gray-400 mt-1">
-              Try changing your search
-              or filters.
+              Try changing your
+              search or filters.
             </p>
 
             <button
@@ -1180,7 +1461,7 @@ const Students = () => {
                 TABLE
             ================================================== */}
             <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-              <table className="w-full min-w-[850px] border-collapse bg-white">
+              <table className="w-full min-w-[900px] border-collapse bg-white">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr className="text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                     <th className="px-6 py-3">
@@ -1213,11 +1494,15 @@ const Students = () => {
                   {paginatedStudents.map(
                     (student) => (
                       <tr
-                        key={student._id}
+                        key={
+                          student._id
+                        }
                         className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition"
                       >
                         <td className="px-6 py-3 font-medium text-gray-800">
-                          {student.name}
+                          {
+                            student.name
+                          }
                         </td>
 
                         <td className="px-6 py-3 text-gray-600">
@@ -1227,7 +1512,9 @@ const Students = () => {
                         </td>
 
                         <td className="px-6 py-3 text-gray-600">
-                          {student.roll}
+                          {
+                            student.roll
+                          }
                         </td>
 
                         <td className="px-6 py-3">
@@ -1239,12 +1526,46 @@ const Students = () => {
                           </span>
                         </td>
 
-                        <td className="px-6 py-3 text-blue-600 font-semibold whitespace-nowrap">
-                          {
-                            student.studentCode
-                          }
+                        {/* Student Code + Copy */}
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2 whitespace-nowrap">
+                            <span className="font-mono text-sm font-semibold text-blue-700">
+                              {
+                                student.studentCode
+                              }
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopyCode(
+                                  student.studentCode
+                                )
+                              }
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-blue-50 hover:text-blue-600"
+                              title="Copy student code"
+                              aria-label={`Copy student code ${student.studentCode}`}
+                            >
+                              {copiedCode ===
+                              student.studentCode ? (
+                                <Check
+                                  size={
+                                    15
+                                  }
+                                  className="text-green-600"
+                                />
+                              ) : (
+                                <Copy
+                                  size={
+                                    15
+                                  }
+                                />
+                              )}
+                            </button>
+                          </div>
                         </td>
 
+                        {/* Actions */}
                         <td className="px-6 py-3">
                           <div className="flex gap-2 justify-center">
                             <button
@@ -1286,10 +1607,13 @@ const Students = () => {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-5">
                 <p className="text-sm text-gray-500">
                   Page{" "}
+
                   <span className="font-medium text-gray-700">
                     {currentPage}
                   </span>{" "}
+
                   of{" "}
+
                   <span className="font-medium text-gray-700">
                     {totalPages}
                   </span>
@@ -1316,6 +1640,7 @@ const Students = () => {
                     <ChevronLeft
                       size={16}
                     />
+
                     <span className="hidden sm:inline">
                       Previous
                     </span>
@@ -1323,8 +1648,12 @@ const Students = () => {
 
                   {/* Page numbers */}
                   {getPageNumbers().map(
-                    (page, index) =>
-                      page === "..." ? (
+                    (
+                      page,
+                      index
+                    ) =>
+                      page ===
+                      "..." ? (
                         <span
                           key={`ellipsis-${index}`}
                           className="flex h-9 w-9 items-center justify-center text-sm text-gray-400"
@@ -1333,7 +1662,9 @@ const Students = () => {
                         </span>
                       ) : (
                         <button
-                          key={page}
+                          key={
+                            page
+                          }
                           type="button"
                           onClick={() =>
                             setCurrentPage(
@@ -1373,6 +1704,7 @@ const Students = () => {
                     <span className="hidden sm:inline">
                       Next
                     </span>
+
                     <ChevronRight
                       size={16}
                     />
