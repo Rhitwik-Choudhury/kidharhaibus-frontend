@@ -5,6 +5,11 @@ import {
   Filter,
   ArrowUpDown,
   X,
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -15,6 +20,9 @@ const Students = () => {
 
   const formSectionRef = useRef(null);
 
+  // =========================================================
+  // Student form
+  // =========================================================
   const [formData, setFormData] = useState({
     name: "",
     studentClass: "",
@@ -26,15 +34,27 @@ const Students = () => {
 
   const [students, setStudents] = useState([]);
   const [buses, setBuses] = useState([]);
-  const [editingId, setEditingId] = useState(null);
 
+  const [editingId, setEditingId] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  // =========================================================
   // Search / filter / sort
+  // =========================================================
   const [searchTerm, setSearchTerm] = useState("");
   const [classFilter, setClassFilter] = useState("");
   const [busFilter, setBusFilter] = useState("");
   const [sortBy, setSortBy] = useState("name-asc");
 
-  // ================= FETCH STUDENTS =================
+  // =========================================================
+  // Pagination
+  // =========================================================
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  // =========================================================
+  // Fetch students
+  // =========================================================
   const fetchStudents = async () => {
     try {
       const schoolId = user?._id || user?.id;
@@ -51,7 +71,9 @@ const Students = () => {
     }
   };
 
-  // ================= FETCH BUSES =================
+  // =========================================================
+  // Fetch buses
+  // =========================================================
   const fetchBuses = async () => {
     try {
       const schoolId = user?._id || user?.id;
@@ -75,7 +97,9 @@ const Students = () => {
     }
   }, [user]);
 
-  // ================= HANDLE INPUT =================
+  // =========================================================
+  // Handle form input
+  // =========================================================
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -85,9 +109,11 @@ const Students = () => {
     }));
   };
 
-  // ================= GENERATE CODE =================
+  // =========================================================
+  // Generate student code
+  // =========================================================
   const generateStudentCode = () => {
-    // Student codes cannot be regenerated during editing.
+    // Existing student codes must never be regenerated.
     if (editingId) return;
 
     const { name, studentClass } = formData;
@@ -110,6 +136,7 @@ const Students = () => {
     const nameParts = name.trim().split(/\s+/);
 
     const firstName = nameParts[0] || "";
+
     const lastName =
       nameParts.length > 1
         ? nameParts[nameParts.length - 1]
@@ -123,9 +150,10 @@ const Students = () => {
       .slice(0, 3)
       .toUpperCase();
 
-    const classCode = String(
-      studentClass
-    ).padStart(2, "0");
+    const classCode = String(studentClass).padStart(
+      2,
+      "0"
+    );
 
     const code =
       `${schoolCode}${firstCode}${lastCode}${classCode}`;
@@ -136,7 +164,9 @@ const Students = () => {
     }));
   };
 
-  // ================= RESET FORM =================
+  // =========================================================
+  // Reset form
+  // =========================================================
   const resetForm = () => {
     setEditingId(null);
 
@@ -150,7 +180,33 @@ const Students = () => {
     });
   };
 
-  // ================= SUBMIT =================
+  // =========================================================
+  // Close form
+  // =========================================================
+  const closeForm = () => {
+    resetForm();
+    setIsFormOpen(false);
+  };
+
+  // =========================================================
+  // Open Add Student form
+  // =========================================================
+  const handleOpenAddStudent = () => {
+    resetForm();
+
+    setIsFormOpen(true);
+
+    setTimeout(() => {
+      formSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
+  };
+
+  // =========================================================
+  // Submit student
+  // =========================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -167,10 +223,13 @@ const Students = () => {
       if (editingId) {
         /*
          * IMPORTANT:
-         * studentCode is deliberately NOT included here.
          *
-         * Once a student has been created, their code should
-         * remain permanent because parents may be linked to it.
+         * studentCode is intentionally NOT included
+         * in the update payload.
+         *
+         * Student codes are permanent identifiers
+         * because parents may already be linked
+         * using the code.
          */
         const updatePayload = {
           name: formData.name,
@@ -203,15 +262,17 @@ const Students = () => {
       await fetchStudents();
 
       resetForm();
+
+      // Close form after successful Add / Update.
+      setIsFormOpen(false);
     } catch (err) {
-      console.error(
-        "Error saving student:",
-        err
-      );
+      console.error("Error saving student:", err);
     }
   };
 
-  // ================= EDIT =================
+  // =========================================================
+  // Edit student
+  // =========================================================
   const handleEdit = (student) => {
     setFormData({
       name: student.name || "",
@@ -224,16 +285,21 @@ const Students = () => {
 
     setEditingId(student._id);
 
-    // Scroll directly to the form instead of relying on window scrolling.
+    // Make sure the collapsible form is open.
+    setIsFormOpen(true);
+
+    // Wait for React to render the form before scrolling.
     setTimeout(() => {
       formSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
-    }, 50);
+    }, 100);
   };
 
-  // ================= DELETE =================
+  // =========================================================
+  // Delete student
+  // =========================================================
   const handleDelete = async (id) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this student?"
@@ -246,19 +312,17 @@ const Students = () => {
 
       await fetchStudents();
 
-      // If the deleted student happened to be in edit mode.
       if (editingId === id) {
-        resetForm();
+        closeForm();
       }
     } catch (err) {
-      console.error(
-        "Delete failed:",
-        err
-      );
+      console.error("Delete failed:", err);
     }
   };
 
-  // ================= UNIQUE CLASSES =================
+  // =========================================================
+  // Unique classes
+  // =========================================================
   const availableClasses = useMemo(() => {
     const classes = [
       ...new Set(
@@ -287,150 +351,143 @@ const Students = () => {
     });
   }, [students]);
 
-  // ================= FILTER / SEARCH / SORT =================
+  // =========================================================
+  // Search / filter / sort
+  // =========================================================
   const filteredStudents = useMemo(() => {
     const query = searchTerm
       .trim()
       .toLowerCase();
 
-    let result = students.filter(
-      (student) => {
-        const matchesSearch =
-          !query ||
-          student.name
-            ?.toLowerCase()
-            .includes(query) ||
-          String(student.roll || "")
-            .toLowerCase()
-            .includes(query) ||
-          student.studentCode
-            ?.toLowerCase()
-            .includes(query) ||
-          String(student.class || "")
-            .toLowerCase()
-            .includes(query) ||
-          student.busId?.busNumber
-            ?.toLowerCase()
-            .includes(query);
+    let result = students.filter((student) => {
+      const matchesSearch =
+        !query ||
+        student.name
+          ?.toLowerCase()
+          .includes(query) ||
+        String(student.roll || "")
+          .toLowerCase()
+          .includes(query) ||
+        student.studentCode
+          ?.toLowerCase()
+          .includes(query) ||
+        String(student.class || "")
+          .toLowerCase()
+          .includes(query) ||
+        student.busId?.busNumber
+          ?.toLowerCase()
+          .includes(query);
 
-        const matchesClass =
-          !classFilter ||
-          String(student.class) ===
-            classFilter;
+      const matchesClass =
+        !classFilter ||
+        String(student.class) === classFilter;
 
-        const matchesBus =
-          !busFilter ||
-          String(student.busId?._id || "") ===
-            busFilter;
+      const matchesBus =
+        !busFilter ||
+        String(student.busId?._id || "") ===
+          busFilter;
 
-        return (
-          matchesSearch &&
-          matchesClass &&
-          matchesBus
-        );
+      return (
+        matchesSearch &&
+        matchesClass &&
+        matchesBus
+      );
+    });
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name-desc":
+          return (b.name || "").localeCompare(
+            a.name || "",
+            undefined,
+            {
+              sensitivity: "base",
+            }
+          );
+
+        case "class-asc":
+          return String(
+            a.class || ""
+          ).localeCompare(
+            String(b.class || ""),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          );
+
+        case "class-desc":
+          return String(
+            b.class || ""
+          ).localeCompare(
+            String(a.class || ""),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          );
+
+        case "roll-asc":
+          return String(
+            a.roll || ""
+          ).localeCompare(
+            String(b.roll || ""),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          );
+
+        case "roll-desc":
+          return String(
+            b.roll || ""
+          ).localeCompare(
+            String(a.roll || ""),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          );
+
+        case "bus-asc":
+          return String(
+            a.busId?.busNumber || ""
+          ).localeCompare(
+            String(b.busId?.busNumber || ""),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          );
+
+        case "bus-desc":
+          return String(
+            b.busId?.busNumber || ""
+          ).localeCompare(
+            String(a.busId?.busNumber || ""),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: "base",
+            }
+          );
+
+        case "name-asc":
+        default:
+          return (a.name || "").localeCompare(
+            b.name || "",
+            undefined,
+            {
+              sensitivity: "base",
+            }
+          );
       }
-    );
-
-    result = [...result].sort(
-      (a, b) => {
-        switch (sortBy) {
-          case "name-desc":
-            return (b.name || "").localeCompare(
-              a.name || "",
-              undefined,
-              {
-                sensitivity: "base",
-              }
-            );
-
-          case "class-asc":
-            return String(
-              a.class || ""
-            ).localeCompare(
-              String(b.class || ""),
-              undefined,
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-
-          case "class-desc":
-            return String(
-              b.class || ""
-            ).localeCompare(
-              String(a.class || ""),
-              undefined,
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-
-          case "roll-asc":
-            return String(
-              a.roll || ""
-            ).localeCompare(
-              String(b.roll || ""),
-              undefined,
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-
-          case "roll-desc":
-            return String(
-              b.roll || ""
-            ).localeCompare(
-              String(a.roll || ""),
-              undefined,
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-
-          case "bus-asc":
-            return String(
-              a.busId?.busNumber || ""
-            ).localeCompare(
-              String(
-                b.busId?.busNumber || ""
-              ),
-              undefined,
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-
-          case "bus-desc":
-            return String(
-              b.busId?.busNumber || ""
-            ).localeCompare(
-              String(
-                a.busId?.busNumber || ""
-              ),
-              undefined,
-              {
-                numeric: true,
-                sensitivity: "base",
-              }
-            );
-
-          case "name-asc":
-          default:
-            return (a.name || "").localeCompare(
-              b.name || "",
-              undefined,
-              {
-                sensitivity: "base",
-              }
-            );
-        }
-      }
-    );
+    });
 
     return result;
   }, [
@@ -440,6 +497,106 @@ const Students = () => {
     busFilter,
     sortBy,
   ]);
+
+  // =========================================================
+  // Reset page when search/filter/sort/page size changes
+  // =========================================================
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchTerm,
+    classFilter,
+    busFilter,
+    sortBy,
+    pageSize,
+  ]);
+
+  // =========================================================
+  // Pagination calculations
+  // =========================================================
+  const totalFilteredStudents =
+    filteredStudents.length;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      totalFilteredStudents / pageSize
+    )
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const startIndex =
+    (currentPage - 1) * pageSize;
+
+  const endIndex =
+    startIndex + pageSize;
+
+  const paginatedStudents =
+    filteredStudents.slice(
+      startIndex,
+      endIndex
+    );
+
+  const firstVisibleStudent =
+    totalFilteredStudents === 0
+      ? 0
+      : startIndex + 1;
+
+  const lastVisibleStudent = Math.min(
+    endIndex,
+    totalFilteredStudents
+  );
+
+  // =========================================================
+  // Pagination page-number helper
+  // =========================================================
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from(
+        { length: totalPages },
+        (_, index) => index + 1
+      );
+    }
+
+    if (currentPage <= 4) {
+      return [
+        1,
+        2,
+        3,
+        4,
+        5,
+        "...",
+        totalPages,
+      ];
+    }
+
+    if (currentPage >= totalPages - 3) {
+      return [
+        1,
+        "...",
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
+    }
+
+    return [
+      1,
+      "...",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "...",
+      totalPages,
+    ];
+  };
 
   const filtersActive =
     searchTerm ||
@@ -452,177 +609,287 @@ const Students = () => {
     setClassFilter("");
     setBusFilter("");
     setSortBy("name-asc");
+    setCurrentPage(1);
   };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      {/* ================= STUDENT FORM ================= */}
-      <div
-        ref={formSectionRef}
-        className="scroll-mt-6"
-      >
-        <h1 className="text-2xl font-semibold mb-6">
-          {editingId
-            ? "Edit Student"
-            : "Add New Student"}
-        </h1>
+      {/* =====================================================
+          PAGE HEADER
+      ====================================================== */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Students
+          </h1>
 
-        <form
-          className="bg-white rounded-lg shadow-md p-6 space-y-4"
-          onSubmit={handleSubmit}
+          <p className="text-sm text-gray-500 mt-1">
+            Manage students registered with
+            your school.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={
+            isFormOpen && !editingId
+              ? closeForm
+              : handleOpenAddStudent
+          }
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter Student Name"
-              value={formData.name}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              required
-            />
-
-            <input
-              type="text"
-              name="studentClass"
-              placeholder="Enter Class (e.g. 06)"
-              value={formData.studentClass}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              required
-            />
-
-            <input
-              type="number"
-              name="rollNumber"
-              placeholder="Enter Roll Number"
-              value={formData.rollNumber}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              required
-            />
-
-            <select
-              name="busId"
-              value={formData.busId}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              required
-            >
-              <option value="">
-                Select Bus
-              </option>
-
-              {buses.map((bus) => (
-                <option
-                  key={bus._id}
-                  value={bus._id}
-                >
-                  {bus.busNumber}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <textarea
-            name="address"
-            placeholder="Enter Address"
-            value={formData.address}
-            onChange={handleChange}
-            className="border p-2 rounded w-full"
-            required
-          />
-
-          {/* ================= STUDENT CODE ================= */}
-          <div>
-            {editingId && (
-              <p className="text-xs font-medium text-gray-500 mb-1.5">
-                Student Code
-              </p>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                name="code"
-                placeholder="Generate the student code"
-                value={formData.code}
-                readOnly
-                required
-                className="border p-2 rounded w-full bg-gray-100 cursor-not-allowed uppercase"
-              />
-
-              {!editingId && (
-                <button
-                  type="button"
-                  onClick={
-                    generateStudentCode
-                  }
-                  className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 whitespace-nowrap"
-                >
-                  Generate Code
-                </button>
-              )}
-            </div>
-
-            {editingId && (
-              <p className="text-xs text-gray-500 mt-1.5">
-                Student code cannot be
-                changed after the student
-                has been created.
-              </p>
-            )}
-          </div>
-
-          {/* ================= FORM ACTIONS ================= */}
-          <div className="flex flex-wrap gap-3">
-            <motion.button
-              type="submit"
-              whileTap={{
-                scale: 0.98,
-              }}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-            >
-              {editingId
-                ? "Update Student"
-                : "Add Student"}
-            </motion.button>
-
-            {editingId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="border border-gray-300 bg-white text-gray-700 px-6 py-2 rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
+          {isFormOpen && !editingId ? (
+            <>
+              <ChevronUp size={18} />
+              Close Form
+            </>
+          ) : (
+            <>
+              <Plus size={18} />
+              Add Student
+            </>
+          )}
+        </button>
       </div>
 
-      {/* ================= STUDENT MANAGEMENT ================= */}
-      <div className="mt-10">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-5">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">
-              Students
-            </h2>
+      {/* =====================================================
+          COLLAPSIBLE STUDENT FORM
+      ====================================================== */}
+      {isFormOpen && (
+        <motion.div
+          ref={formSectionRef}
+          className="scroll-mt-6 mb-8"
+          initial={{
+            opacity: 0,
+            height: 0,
+          }}
+          animate={{
+            opacity: 1,
+            height: "auto",
+          }}
+          transition={{
+            duration: 0.25,
+          }}
+        >
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Form header */}
+            <div className="flex items-center justify-between gap-4 border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {editingId
+                    ? "Edit Student"
+                    : "Add New Student"}
+                </h2>
 
-            <p className="text-sm text-gray-500 mt-1">
-              {students.length}{" "}
-              {students.length === 1
-                ? "student"
-                : "students"}{" "}
-              registered
-            </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {editingId
+                    ? "Update the student's information below."
+                    : "Enter the student's information to add them to the school."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeForm}
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                aria-label="Close form"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form
+              className="p-6 space-y-4"
+              onSubmit={handleSubmit}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Student Name
+                  </label>
+
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter student name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="border border-gray-300 p-2.5 rounded-lg w-full outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Class
+                  </label>
+
+                  <input
+                    type="text"
+                    name="studentClass"
+                    placeholder="e.g. 06"
+                    value={
+                      formData.studentClass
+                    }
+                    onChange={handleChange}
+                    className="border border-gray-300 p-2.5 rounded-lg w-full outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Roll Number
+                  </label>
+
+                  <input
+                    type="number"
+                    name="rollNumber"
+                    placeholder="Enter roll number"
+                    value={
+                      formData.rollNumber
+                    }
+                    onChange={handleChange}
+                    className="border border-gray-300 p-2.5 rounded-lg w-full outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Bus
+                  </label>
+
+                  <select
+                    name="busId"
+                    value={formData.busId}
+                    onChange={handleChange}
+                    className="border border-gray-300 p-2.5 rounded-lg w-full bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
+                  >
+                    <option value="">
+                      Select Bus
+                    </option>
+
+                    {buses.map((bus) => (
+                      <option
+                        key={bus._id}
+                        value={bus._id}
+                      >
+                        {bus.busNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Address
+                </label>
+
+                <textarea
+                  name="address"
+                  placeholder="Enter address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  rows={3}
+                  className="border border-gray-300 p-2.5 rounded-lg w-full resize-y outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  required
+                />
+              </div>
+
+              {/* Student Code */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Student Code
+                </label>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    name="code"
+                    placeholder="Generate the student code"
+                    value={formData.code}
+                    readOnly
+                    required
+                    className="border border-gray-300 p-2.5 rounded-lg w-full bg-gray-100 cursor-not-allowed uppercase"
+                  />
+
+                  {!editingId && (
+                    <button
+                      type="button"
+                      onClick={
+                        generateStudentCode
+                      }
+                      className="border border-gray-300 bg-gray-100 px-4 py-2.5 rounded-lg hover:bg-gray-200 whitespace-nowrap text-sm font-medium text-gray-700"
+                    >
+                      Generate Code
+                    </button>
+                  )}
+                </div>
+
+                {editingId && (
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    Student code cannot be
+                    changed after the student
+                    has been created.
+                  </p>
+                )}
+              </div>
+
+              {/* Form actions */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                <motion.button
+                  type="submit"
+                  whileTap={{
+                    scale: 0.98,
+                  }}
+                  className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  {editingId
+                    ? "Update Student"
+                    : "Add Student"}
+                </motion.button>
+
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="border border-gray-300 bg-white text-gray-700 px-6 py-2.5 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
+        </motion.div>
+      )}
+
+      {/* =====================================================
+          STUDENT MANAGEMENT
+      ====================================================== */}
+      <div>
+        {/* Student count */}
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-gray-800">
+            Student Directory
+          </h2>
+
+          <p className="text-sm text-gray-500 mt-1">
+            {students.length}{" "}
+            {students.length === 1
+              ? "student"
+              : "students"}{" "}
+            registered
+          </p>
         </div>
 
         {students.length > 0 && (
           <>
-            {/* ================= SEARCH ================= */}
+            {/* =================================================
+                SEARCH
+            ================================================== */}
             <div className="relative mb-4">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -642,7 +909,9 @@ const Students = () => {
               />
             </div>
 
-            {/* ================= FILTERS ================= */}
+            {/* =================================================
+                FILTERS
+            ================================================== */}
             <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Filter
@@ -776,48 +1045,113 @@ const Students = () => {
               </div>
             </div>
 
-            {/* Result count */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <p className="text-sm text-gray-500">
-                Showing{" "}
-                <span className="font-medium text-gray-700">
-                  {
-                    filteredStudents.length
-                  }
-                </span>{" "}
-                of{" "}
-                <span className="font-medium text-gray-700">
-                  {students.length}
-                </span>{" "}
-                students
-              </p>
-
-              {(searchTerm ||
-                classFilter ||
-                busFilter) && (
-                <p className="text-xs text-blue-600">
-                  Filters applied
+            {/* =================================================
+                RESULTS / PAGE SIZE
+            ================================================== */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <div>
+                <p className="text-sm text-gray-500">
+                  {totalFilteredStudents >
+                  0 ? (
+                    <>
+                      Showing{" "}
+                      <span className="font-medium text-gray-700">
+                        {
+                          firstVisibleStudent
+                        }
+                      </span>
+                      –
+                      <span className="font-medium text-gray-700">
+                        {
+                          lastVisibleStudent
+                        }
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-medium text-gray-700">
+                        {
+                          totalFilteredStudents
+                        }
+                      </span>{" "}
+                      students
+                    </>
+                  ) : (
+                    "No matching students"
+                  )}
                 </p>
-              )}
+
+                {totalFilteredStudents !==
+                  students.length && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {students.length} total
+                    students registered
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="pageSize"
+                  className="text-sm text-gray-500"
+                >
+                  Rows per page:
+                </label>
+
+                <select
+                  id="pageSize"
+                  value={pageSize}
+                  onChange={(e) =>
+                    setPageSize(
+                      Number(e.target.value)
+                    )
+                  }
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                >
+                  <option value={25}>
+                    25
+                  </option>
+
+                  <option value={50}>
+                    50
+                  </option>
+
+                  <option value={100}>
+                    100
+                  </option>
+                </select>
+              </div>
             </div>
           </>
         )}
 
-        {/* ================= EMPTY STATE ================= */}
+        {/* =====================================================
+            EMPTY STATES
+        ====================================================== */}
         {students.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-            <p className="font-medium text-gray-600">
+          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+            <p className="font-medium text-gray-700">
               No students added yet
             </p>
 
             <p className="text-sm text-gray-400 mt-1">
-              Students you add will
-              appear here.
+              Add your first student to
+              start building the school
+              directory.
             </p>
+
+            <button
+              type="button"
+              onClick={
+                handleOpenAddStudent
+              }
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
+              <Plus size={16} />
+              Add Student
+            </button>
           </div>
         ) : filteredStudents.length ===
           0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
             <Search
               className="mx-auto mb-3 text-gray-400"
               size={28}
@@ -841,106 +1175,212 @@ const Students = () => {
             </button>
           </div>
         ) : (
-          /* ================= TABLE ================= */
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table className="w-full min-w-[850px] border-collapse bg-white">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr className="text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                  <th className="px-6 py-3">
-                    Name
-                  </th>
+          <>
+            {/* =================================================
+                TABLE
+            ================================================== */}
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+              <table className="w-full min-w-[850px] border-collapse bg-white">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr className="text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                    <th className="px-6 py-3">
+                      Name
+                    </th>
 
-                  <th className="px-6 py-3">
-                    Class
-                  </th>
+                    <th className="px-6 py-3">
+                      Class
+                    </th>
 
-                  <th className="px-6 py-3">
-                    Roll
-                  </th>
+                    <th className="px-6 py-3">
+                      Roll
+                    </th>
 
-                  <th className="px-6 py-3">
-                    Bus
-                  </th>
+                    <th className="px-6 py-3">
+                      Bus
+                    </th>
 
-                  <th className="px-6 py-3">
-                    Student Code
-                  </th>
+                    <th className="px-6 py-3">
+                      Student Code
+                    </th>
 
-                  <th className="px-6 py-3 text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+                    <th className="px-6 py-3 text-center">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {filteredStudents.map(
-                  (student) => (
-                    <tr
-                      key={student._id}
-                      className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition"
-                    >
-                      <td className="px-6 py-3 font-medium text-gray-800">
-                        {student.name}
-                      </td>
+                <tbody>
+                  {paginatedStudents.map(
+                    (student) => (
+                      <tr
+                        key={student._id}
+                        className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition"
+                      >
+                        <td className="px-6 py-3 font-medium text-gray-800">
+                          {student.name}
+                        </td>
 
-                      <td className="px-6 py-3 text-gray-600">
-                        {
-                          student.class
-                        }
-                      </td>
+                        <td className="px-6 py-3 text-gray-600">
+                          {
+                            student.class
+                          }
+                        </td>
 
-                      <td className="px-6 py-3 text-gray-600">
-                        {student.roll}
-                      </td>
+                        <td className="px-6 py-3 text-gray-600">
+                          {student.roll}
+                        </td>
 
-                      <td className="px-6 py-3">
-                        <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                          {student
-                            .busId
-                            ?.busNumber ||
-                            "N/A"}
+                        <td className="px-6 py-3">
+                          <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            {student
+                              .busId
+                              ?.busNumber ||
+                              "N/A"}
+                          </span>
+                        </td>
+
+                        <td className="px-6 py-3 text-blue-600 font-semibold whitespace-nowrap">
+                          {
+                            student.studentCode
+                          }
+                        </td>
+
+                        <td className="px-6 py-3">
+                          <div className="flex gap-2 justify-center">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleEdit(
+                                  student
+                                )
+                              }
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDelete(
+                                  student._id
+                                )
+                              }
+                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* =================================================
+                PAGINATION
+            ================================================== */}
+            {totalPages > 1 && (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-5">
+                <p className="text-sm text-gray-500">
+                  Page{" "}
+                  <span className="font-medium text-gray-700">
+                    {currentPage}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-gray-700">
+                    {totalPages}
+                  </span>
+                </p>
+
+                <div className="flex flex-wrap items-center gap-1">
+                  {/* Previous */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage(
+                        (prev) =>
+                          Math.max(
+                            1,
+                            prev - 1
+                          )
+                      )
+                    }
+                    disabled={
+                      currentPage === 1
+                    }
+                    className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft
+                      size={16}
+                    />
+                    <span className="hidden sm:inline">
+                      Previous
+                    </span>
+                  </button>
+
+                  {/* Page numbers */}
+                  {getPageNumbers().map(
+                    (page, index) =>
+                      page === "..." ? (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="flex h-9 w-9 items-center justify-center text-sm text-gray-400"
+                        >
+                          ...
                         </span>
-                      </td>
+                      ) : (
+                        <button
+                          key={page}
+                          type="button"
+                          onClick={() =>
+                            setCurrentPage(
+                              page
+                            )
+                          }
+                          className={`h-9 min-w-9 rounded-lg border px-3 text-sm font-medium transition ${
+                            currentPage ===
+                            page
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                  )}
 
-                      <td className="px-6 py-3 text-blue-600 font-semibold whitespace-nowrap">
-                        {
-                          student.studentCode
-                        }
-                      </td>
-
-                      <td className="px-6 py-3">
-                        <div className="flex gap-2 justify-center">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleEdit(
-                                student
-                              )
-                            }
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm"
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDelete(
-                                student._id
-                              )
-                            }
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
+                  {/* Next */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage(
+                        (prev) =>
+                          Math.min(
+                            totalPages,
+                            prev + 1
+                          )
+                      )
+                    }
+                    disabled={
+                      currentPage ===
+                      totalPages
+                    }
+                    className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span className="hidden sm:inline">
+                      Next
+                    </span>
+                    <ChevronRight
+                      size={16}
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
