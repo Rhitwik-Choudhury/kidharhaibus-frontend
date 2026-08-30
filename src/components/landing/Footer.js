@@ -1,3 +1,223 @@
+// import React from 'react';
+// import {
+//   Bus,
+//   Facebook,
+//   Twitter,
+//   Linkedin,
+//   Instagram,
+//   Mail,
+//   Phone,
+//   MapPin,
+// } from 'lucide-react';
+
+// const Footer = () => {
+//   const footerLinks = {
+//     product: [
+//       { name: 'Features', href: '#features' },
+//     ],
+
+//     support: [
+//       { name: 'Help Center', href: '#contact' },
+//       { name: 'Contact Us', href: '#contact' },
+//     ],
+
+//     legal: [
+//       { name: 'Privacy Policy', href: '/privacy' },
+//       { name: 'Terms of Service', href: '/privacy' },
+//     ],
+//   };
+
+//   const socialLinks = [
+//     { icon: Facebook, url: '#', name: 'Facebook' },
+//     { icon: Twitter, url: '#', name: 'Twitter' },
+//     { icon: Linkedin, url: '#', name: 'LinkedIn' },
+//     { icon: Instagram, url: '#', name: 'Instagram' },
+//   ];
+
+//   return (
+//     <footer className="bg-gray-900 text-white">
+//       {/* Main footer content */}
+//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+//         <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-8">
+//           {/* Brand section */}
+//           <div className="lg:col-span-1">
+//             <div className="flex items-center space-x-2 mb-6">
+//               <Bus className="h-8 w-8 text-blue-400" />
+//               <span className="text-2xl font-bold">Trackefy</span>
+//             </div>
+
+//             <p className="text-gray-400 mb-6 leading-relaxed">
+//               Making school transportation safer, smarter, and more reliable for
+//               parents, schools, and drivers across India.
+//             </p>
+
+//             {/* Contact info */}
+//             <div className="space-y-3">
+//               <div className="flex items-center space-x-3">
+//                 <Phone className="w-4 h-4 text-blue-400" />
+//                 <span className="text-gray-400">+91 6000407957</span>
+//               </div>
+
+//               <div className="flex items-center space-x-3">
+//                 <Mail className="w-4 h-4 text-blue-400" />
+//                 <span className="text-gray-400">trackefy@gmail.com</span>
+//               </div>
+
+//               <div className="flex items-center space-x-3">
+//                 <MapPin className="w-4 h-4 text-blue-400" />
+//                 <span className="text-gray-400">Guwahati, Assam</span>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Product */}
+//           <div className="lg:col-span-1 md:col-span-1">
+//             <h3 className="text-lg font-semibold mb-4">Product</h3>
+
+//             <ul className="space-y-3">
+//               {footerLinks.product.map((link, index) => (
+//                 <li key={index}>
+//                   <a
+//                     href={link.href}
+//                     className="text-gray-400 hover:text-white transition-colors duration-200"
+//                   >
+//                     {link.name}
+//                   </a>
+//                 </li>
+//               ))}
+//             </ul>
+//           </div>
+
+//           {/* Support + Legal */}
+//           <div className="grid grid-cols-2 gap-8 lg:col-span-2">
+//             {/* Support */}
+//             <div>
+//               <h3 className="text-lg font-semibold mb-4">Support</h3>
+
+//               <ul className="space-y-3">
+//                 {footerLinks.support.map((link, index) => (
+//                   <li key={index}>
+//                     <a
+//                       href={link.href}
+//                       className="text-gray-400 hover:text-white transition-colors duration-200"
+//                     >
+//                       {link.name}
+//                     </a>
+//                   </li>
+//                 ))}
+//               </ul>
+//             </div>
+
+//             {/* Legal */}
+//             <div>
+//               <h3 className="text-lg font-semibold mb-4">Legal</h3>
+
+//               <ul className="space-y-3">
+//                 {footerLinks.legal.map((link, index) => (
+//                   <li key={index}>
+//                     <a
+//                       href={link.href}
+//                       className="text-gray-400 hover:text-white transition-colors duration-200"
+//                     >
+//                       {link.name}
+//                     </a>
+//                   </li>
+//                 ))}
+//               </ul>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Newsletter subscription */}
+//         <div className="border-t border-gray-800 mt-12 pt-8">
+//           <div className="md:flex md:items-center md:justify-between">
+//             <div className="md:flex-1">
+//               <h3 className="text-lg font-semibold mb-2">Stay Updated</h3>
+
+//               <p className="text-gray-400 mb-4 md:mb-0">
+//                 Get the latest updates on features, safety tips, and company news.
+//               </p>
+//             </div>
+
+//             <div className="w-full min-w-0 md:flex-1 md:max-w-md md:ml-8">
+//               <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:gap-0">
+//                 <input
+//                   type="email"
+//                   placeholder="Enter your email"
+//                   className="min-w-0 w-full flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg sm:rounded-r-none focus:outline-none focus:border-blue-500 text-white"
+//                 />
+
+//                 <button
+//                   type="button"
+//                   className="shrink-0 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg sm:rounded-l-none font-medium transition-colors duration-200"
+//                 >
+//                   Subscribe
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Bottom section */}
+//       <div className="border-t border-gray-800">
+//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+//           <div className="md:flex md:items-center md:justify-between">
+//             <div className="text-gray-400 text-sm">
+//               © 2025 Trackefy. All rights reserved. Built with ❤️ in India.
+//             </div>
+
+//             {/* Social media links */}
+//             <div className="flex space-x-6 mt-4 md:mt-0">
+//               {socialLinks.map((social, index) => {
+//                 const Icon = social.icon;
+
+//                 return (
+//                   <a
+//                     key={index}
+//                     href={social.url}
+//                     className="text-gray-400 hover:text-white transition-colors duration-200"
+//                     aria-label={social.name}
+//                   >
+//                     <Icon className="w-5 h-5" />
+//                   </a>
+//                 );
+//               })}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Floating scroll-to-top button */}
+//       <button
+//         type="button"
+//         onClick={() => {
+//           const homeSection = document.getElementById('home');
+
+//           if (homeSection) {
+//             homeSection.scrollIntoView({
+//               behavior: 'smooth',
+//               block: 'start',
+//             });
+//           }
+//         }}
+//         className="fixed bottom-6 right-6 z-50 h-16 w-16 overflow-hidden rounded-full bg-transparent p-0 shadow-2xl transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 sm:bottom-8 sm:right-8"
+//         aria-label="Scroll to top"
+//         title="Back to top"
+//       >
+//         <img
+//           src="/appIcon.png"
+//           alt=""
+//           aria-hidden="true"
+//           className="h-full w-full rounded-full object-cover"
+//         />
+//       </button>
+//     </footer>
+//   );
+// };
+
+// export default Footer;
+
 import React from 'react';
 import {
   Bus,
@@ -9,6 +229,11 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react';
+
+const PLAY_STORE_URL =
+  'https://play.google.com/store/apps/details?id=com.trackefy.app';
+const PLAY_STORE_BADGE =
+  'https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png';
 
 const Footer = () => {
   const footerLinks = {
@@ -50,6 +275,20 @@ const Footer = () => {
               Making school transportation safer, smarter, and more reliable for
               parents, schools, and drivers across India.
             </p>
+
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download Trackefy from Google Play"
+              className="mb-6 inline-flex rounded-lg transition-transform duration-200 hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+              <img
+                src={PLAY_STORE_BADGE}
+                alt="Get it on Google Play"
+                className="h-[60px] w-auto"
+              />
+            </a>
 
             {/* Contact info */}
             <div className="space-y-3">
