@@ -57,6 +57,14 @@ const Navbar = () => {
             >
               Contact
             </button>
+            <a
+              href="/Trackefy-Brochure.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-black font-medium hover:underline"
+            >
+              Brochure
+            </a>
             <Button
               onClick={() => setIsSignInOpen(true)}
               className="bg-white text-black px-4 py-2 shadow-sm hover:bg-gray-100"
@@ -67,12 +75,22 @@ const Navbar = () => {
 
           {/* Mobile Button */}
           <div className="md:hidden">
-            <Button
-              onClick={() => setIsSignInOpen(true)}
-              className="bg-white text-black px-4 py-2 shadow-sm hover:bg-gray-100"
-            >
-              Sign In
-            </Button>
+            <div className="flex items-center gap-2">
+              <a
+                href="/Trackefy-Brochure.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md px-2 py-2 text-sm font-medium text-black hover:bg-white/40"
+              >
+                Brochure
+              </a>
+              <Button
+                onClick={() => setIsSignInOpen(true)}
+                className="bg-white text-black px-4 py-2 shadow-sm hover:bg-gray-100"
+              >
+                Sign In
+              </Button>
+            </div>
           </div>
         </div>
       </nav>

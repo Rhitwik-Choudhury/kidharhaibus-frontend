@@ -1,102 +1,76 @@
 import React from 'react';
 import { Card, CardContent } from '../ui/card';
-import { Smartphone } from 'lucide-react';
 
 const SystemPreview = () => {
-  const mockups = [
+  const goToContact = () => {
+    document.getElementById('contact')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
+  const mobilePreviews = [
     {
-      title: 'Parent Dashboard',
-      color: 'red',
-      features: ['Live Bus Location', 'Child Status', 'Instant Alerts', 'Trip History'],
-      image: '/api/placeholder/300/600'
+      title: 'Parent App',
+      description: 'Live bus location, trip status and pickup-location controls.',
+      image: '/system-preview/parent-dashboard.png',
+      alt: 'Trackefy parent app showing live trip status, bus route and pickup location controls'
     },
     {
-      title: 'Driver Dashboard',
-      color: 'orange', 
-      features: ['Start/End Trip', 'Student List', 'Route Navigation', 'Quick Alerts'],
-      image: '/api/placeholder/300/600'
-    },
-    {
-      title: 'School Admin Panel',
-      color: 'blue',
-      features: ['Fleet Overview', 'Route Management', 'Driver Assignment', 'Analytics'],
-      image: '/api/placeholder/300/600'
+      title: 'Driver App',
+      description: 'Assigned bus details and simple controls for starting each trip.',
+      image: '/system-preview/driver-dashboard.png',
+      alt: 'Trackefy driver app showing assigned bus, route and start trip control'
     }
   ];
 
-  const getColorClasses = (color) => {
-    const colorMap = {
-      red: 'bg-gradient-to-br from-red-500 to-red-600',
-      orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
-      blue: 'bg-gradient-to-br from-blue-500 to-blue-600'
-    };
-    return colorMap[color];
-  };
-
   return (
-    <section className="py-20 bg-white">
+    <section className="py-16 md:py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            System Preview
+            See Trackefy in Action
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Experience intuitive dashboards designed specifically for each user role, 
-            ensuring everyone gets exactly what they need.
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+            Real views from the tools parents, drivers and schools use every day.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {mockups.map((mockup, index) => (
-            <div key={index} className="text-center group">
-              <Card className="bg-gray-50 border-0 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-4 overflow-hidden">
-                <CardContent className="p-8">
-                  {/* Phone mockup */}
-                  <div className="relative mx-auto w-48 h-96 mb-6">
-                    <div className="absolute inset-0 bg-gray-800 rounded-3xl shadow-2xl">
-                      {/* Phone frame */}
-                      <div className="absolute inset-2 bg-gray-900 rounded-2xl">
-                        {/* Screen */}
-                        <div className={`absolute inset-1 ${getColorClasses(mockup.color)} rounded-2xl flex flex-col items-center justify-center text-white p-4`}>
-                          <Smartphone className="w-12 h-12 mb-4 opacity-80" />
-                          <h3 className="text-lg font-bold mb-2">{mockup.title}</h3>
-                          <div className="space-y-2 w-full">
-                            {mockup.features.map((feature, featureIndex) => (
-                              <div key={featureIndex} className="bg-white/20 backdrop-blur-sm rounded px-2 py-1">
-                                <span className="text-xs font-medium">{feature}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {/* Home indicator */}
-                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-white rounded-full opacity-60"></div>
-                      </div>
-                      
-                      {/* Notch */}
-                      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-16 h-6 bg-gray-900 rounded-full"></div>
-                    </div>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {mockup.title}
+        <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+          {mobilePreviews.map((preview) => (
+            <Card key={preview.title} className="border border-gray-200 bg-gray-50 shadow-xl overflow-hidden">
+              <CardContent className="p-5 sm:p-7 text-center">
+                <div className="mx-auto max-w-[280px] overflow-hidden rounded-[2rem] border-[7px] border-gray-900 bg-gray-900 shadow-2xl">
+                  <img src={preview.image} alt={preview.alt} className="block w-full h-auto bg-white" loading="lazy" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mt-7 mb-2">
+                    {preview.title}
                   </h3>
-                  <p className="text-gray-600 text-sm">
-                    Optimized interface for seamless user experience
-                  </p>
-                </CardContent>
-              </Card>
-              
-              {/* Floating elements */}
-              <div className={`absolute -top-4 -right-4 w-8 h-8 ${getColorClasses(mockup.color)} rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300`}></div>
-            </div>
+                <p className="text-gray-600">{preview.description}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
+        <Card className="mt-8 border border-blue-100 bg-gray-50 shadow-xl overflow-hidden">
+          <CardContent className="p-5 sm:p-7">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-inner">
+              <img src="/system-preview/school-dashboard.png" alt="Trackefy school dashboard showing school code and student, driver, bus and trip overview" className="block w-full h-auto" loading="lazy" />
+            </div>
+            <div className="text-center mt-7">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">School Dashboard</h3>
+              <p className="text-gray-600">A clear overview of students, drivers, buses and active trips.</p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Interactive preview button */}
-        <div className="text-center mt-16">
-          <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-full font-semibold text-lg shadow-xl transform hover:scale-105 transition-all duration-200">
-            Try Interactive Demo
+        <div className="text-center mt-12">
+          <button
+            type="button"
+            onClick={goToContact}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 rounded-full font-semibold text-lg shadow-xl transform hover:scale-105 transition-all duration-200"
+          >
+            Request a Demo
           </button>
         </div>
       </div>

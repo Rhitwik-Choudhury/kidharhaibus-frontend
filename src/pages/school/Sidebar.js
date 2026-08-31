@@ -1,6 +1,7 @@
 // src/pages/school/Sidebar.js
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -28,9 +30,20 @@ const navItems = [
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false); // For desktop collapse
   const [mobileOpen, setMobileOpen] = useState(false); // For mobile toggle
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const toggleCollapse = () => setCollapsed(!collapsed);
   const toggleMobile = () => setMobileOpen(!mobileOpen);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    await logout();
+    navigate("/auth/school/signin", { replace: true });
+  };
 
   return (
     <>
@@ -48,7 +61,7 @@ const Sidebar = () => {
 
       {/* Sidebar */}
       <aside
-        className={`bg-blue-700 text-white p-4 space-y-6 z-40 fixed md:static top-0 left-0 h-screen transform transition-transform duration-300 ease-in-out
+        className={`bg-blue-700 text-white p-4 z-40 fixed md:static top-0 left-0 h-screen transform transition-transform duration-300 ease-in-out flex flex-col
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
           ${collapsed ? "w-20" : "w-64"}`}
       >
@@ -84,7 +97,7 @@ const Sidebar = () => {
 
 
         {/* Navigation Links */}
-        <nav className="flex flex-col space-y-2">
+        <nav className="flex flex-1 flex-col space-y-2">
           {navItems.map(({ name, path, icon: Icon, external }) => {
             if (external) {
               return (
@@ -119,6 +132,21 @@ const Sidebar = () => {
             );
           })}
         </nav>
+
+        <div className="border-t border-blue-500/70 pt-4">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-left transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!collapsed && (
+              <span>{isLoggingOut ? "Logging out…" : "Logout"}</span>
+            )}
+          </button>
+        </div>
       </aside>
 
       {/* Overlay for mobile */}

@@ -7,8 +7,6 @@ import { useToast } from '../../hooks/use-toast';
 import {
   Phone,
   Mail,
-  MapPin,
-  Clock,
   Facebook,
   Twitter,
   Linkedin,
@@ -82,18 +80,6 @@ const ContactSection = () => {
       details: 'trackefy@gmail.com',
       subtitle: 'We reply within 24 hours'
     },
-    {
-      icon: MapPin,
-      title: 'Visit Us',
-      details: 'Guwahati, Assam',
-      subtitle: 'India 781001'
-    },
-    {
-      icon: Clock,
-      title: 'Support Hours',
-      details: '24/7 Emergency',
-      subtitle: 'Always here for you'
-    }
   ];
 
   const socialLinks = [
@@ -207,21 +193,6 @@ const ContactSection = () => {
                 );
               })}
             </div>
-
-            {/* Map placeholder */}
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg overflow-hidden">
-              <div className="h-64 bg-gradient-to-br from-blue-100 to-blue-200 relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      Visit Our Office
-                    </h3>
-                    <p className="text-gray-600">Interactive map coming soon</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
 
             {/* Social Links */}
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">

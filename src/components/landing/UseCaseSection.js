@@ -7,26 +7,26 @@ const UseCaseSection = () => {
     {
       icon: Users,
       title: 'Parents',
-      subtitle: 'Track & Alert',
-      description: 'Get real-time updates on your child\'s journey, receive pickup and drop-off notifications, and access emergency features for complete peace of mind.',
+      subtitle: 'Follow Every Trip',
+      description: 'See the assigned bus on a live map, follow the current trip and receive timely updates as the bus approaches.',
       color: 'red',
-      features: ['Live location tracking', 'Instant alerts', 'Emergency SOS', 'Trip history']
+      features: ['Live bus tracking', 'Trip start and end updates', 'ETA and arrival alerts', 'Saved pickup location']
     },
     {
       icon: Building2,
       title: 'Schools',
-      subtitle: 'Manage Fleet',
-      description: 'Efficiently manage your entire bus fleet, monitor routes, track attendance, and ensure the safety of all students with comprehensive admin tools.',
+      subtitle: 'Manage School Transport',
+      description: 'Manage students, buses and drivers from one dashboard while keeping track of active school-bus trips.',
       color: 'blue',
-      features: ['Fleet management', 'Route optimization', 'Driver monitoring', 'Attendance tracking']
+      features: ['Student management', 'Bus and driver assignment', 'Active trip monitoring', 'School and student codes']
     },
     {
       icon: Truck,
       title: 'Drivers',
-      subtitle: 'Trip Status',
-      description: 'Streamline your daily operations with easy trip management, quick communication tools, and real-time navigation assistance.',
+      subtitle: 'Run and Share Trips',
+      description: 'View the assigned bus, start or end a trip and securely share live location with the connected school and parents.',
       color: 'orange',
-      features: ['Trip management', 'Navigation assist', 'Quick alerts', 'Performance tracking']
+      features: ['Assigned bus details', 'Start and end trip controls', 'Background location sharing', 'Trip status updates']
     }
   ];
 
@@ -37,21 +37,18 @@ const UseCaseSection = () => {
         border: 'border-red-200',
         icon: 'bg-red-100 text-red-600',
         title: 'text-red-600',
-        button: 'bg-red-600 hover:bg-red-700'
       },
       blue: {
         bg: 'bg-blue-50',
         border: 'border-blue-200',
         icon: 'bg-blue-100 text-blue-600',
         title: 'text-blue-600',
-        button: 'bg-blue-600 hover:bg-blue-700'
       },
       orange: {
         bg: 'bg-orange-50',
         border: 'border-orange-200',
         icon: 'bg-orange-100 text-orange-600',
         title: 'text-orange-600',
-        button: 'bg-orange-600 hover:bg-orange-700'
       }
     };
     return colorMap[color];
@@ -108,9 +105,6 @@ const UseCaseSection = () => {
                     </ul>
                   </div>
                   
-                  <button className={`w-full ${colors.button} text-white py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 mt-6`}>
-                    Learn More
-                  </button>
                 </CardContent>
               </Card>
             );
