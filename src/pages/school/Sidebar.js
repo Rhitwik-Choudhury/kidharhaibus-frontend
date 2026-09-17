@@ -22,6 +22,7 @@ const navItems = [
   { name: "Students", path: "/school/students", icon: Users },
   { name: "Drivers", path: "/school/drivers", icon: User },
   { name: "Buses", path: "/school/buses", icon: Bus },
+  { name: "Routes & Stops", path: "/school/routes", icon: Map },
   { name: "Trips", path: "/school/trips", icon: Map },
   { name: "Alerts", path: "/school/alerts", icon: AlertTriangle },
   { name: "Delete Account", path: "/delete-account", icon: Trash2, external: true },

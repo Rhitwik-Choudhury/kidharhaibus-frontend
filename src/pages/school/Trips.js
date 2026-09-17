@@ -1,212 +1,29 @@
-// src/pages/school/Trips.js
-/**
- * School Trips (Live Tracking)
- * ---------------------------
- * - Receives:
- *    • 'locationUpdate' → { latitude, longitude, timestamp } from driver
- *    • 'tripStatus'     → { status: 'started'|'ended', at: <ts> } from server
- * - Shows "Live" only when the trip is started; otherwise "Offline".
- * - Shows a status line: "Your trip has started/ended/Waiting…".
- * - Draws a breadcrumb polyline of recent points (capped for performance).
- * - NO auto recentring. A top-right button lets users center on the bus on demand.
- *
- * Notes:
- *   • Move MAPTILER_KEY to an env var in production.
- *   • Re-enable attribution according to your tile provider’s license when you go live.
- */
-
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import React, { useEffect, useRef, useState } from 'react';
+import api from '../../services/api';
 import socket from '../../lib/socket';
-
-// ---- Leaflet default marker icon fix (works with CRA/Vite bundlers) ----
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-// ⚠️ Use process.env.REACT_APP_MAPTILER_KEY for production
-const MAPTILER_KEY = '9eLFBgrPYvv614T7WVu8';
-
-/**
- * Grabs the Leaflet map instance and passes it back up to the parent via setMapRef.
- * We keep it as a tiny child component so we can call useMap().
- */
-function MapReady({ setMapRef }) {
-  const map = useMap();
-  useEffect(() => setMapRef(map), [map, setMapRef]);
-  return null;
-}
-
-const Trips = () => {
-  // Latest bus location
-  const [location, setLocation] = useState(null); // { lat, lng }
-
-  // Breadcrumb trail (array of [lat, lng]); we cap to avoid infinite growth
-  const [path, setPath] = useState([]);
-
-  // Socket connection UI (not the same as trip status)
-  const [connected, setConnected] = useState(false);
-
-  // Actual trip status we want to show users: 'idle'|'started'|'ended'
-  const [tripStatus, setTripStatus] = useState('idle');
-
-  // Store the Leaflet map instance so we can flyTo() when the user clicks "Center"
-  const [mapRef, setMapRef] = useState(null);
-
-  // Guard against setting state after unmount
-  const isMountedRef = useRef(true);
-
+import RouteMap from '../../components/routes/RouteMap';
+import './RoutesStops.css';
+export default function Trips() {
+  const [buses, setBuses] = useState([]), [selected, setSelected] = useState(''), [error, setError] = useState(''), [loading, setLoading] = useState(true), [connected, setConnected] = useState(socket.connected), [now, setNow] = useState(Date.now());
+  const inFlight = useRef(false);
   useEffect(() => {
-    isMountedRef.current = true;
-
-    // Socket connection (handy to debug; Live/Offline pill is driven by tripStatus)
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => setConnected(false);
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-
-    // Location stream from driver
-    const onLocation = (data) => {
-      const { latitude, longitude } = data || {};
-      const lat = Number(latitude);
-      const lng = Number(longitude);
-      if (!isMountedRef.current || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
-
-      const point = { lat, lng };
-      setLocation(point);
-      setPath((prev) => {
-        const next = [...prev, [lat, lng]];
-        // cap last 600 points to keep it light
-        return next.length > 600 ? next.slice(-600) : next;
-      });
-
-      // Seeing coordinates means the bus is live (extra safety)
-      setTripStatus('started');
-    };
-
-    // Trip status broadcast from the backend
-    const onTripStatus = (msg) => {
-      if (!isMountedRef.current) return;
-      if (msg?.status === 'started') setTripStatus('started');
-      if (msg?.status === 'ended') setTripStatus('ended');
-    };
-
-    socket.on('locationUpdate', onLocation);
-    socket.on('tripStatus', onTripStatus);
-
-    // Cleanup
-    return () => {
-      isMountedRef.current = false;
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-      socket.off('locationUpdate', onLocation);
-      socket.off('tripStatus', onTripStatus);
-    };
+    let cancelled = false;
+    async function load() { if (inFlight.current) return; inFlight.current = true; try { const { data } = await api.get('/school/trips'); if (!cancelled) { setBuses(data.buses || []); setSelected(current => current || data.buses?.[0]?.id || ''); setError(''); } } catch { if (!cancelled) setError('Unable to refresh trips. Retrying shortly.'); } finally { inFlight.current = false; if (!cancelled) setLoading(false); } }
+    const join = () => { setConnected(true); socket.emit('joinSchoolRoom', {}); load(); };
+    const disconnect = () => setConnected(false);
+    const update = trip => setBuses(current => current.map(bus => bus.id === trip.busId ? { ...bus, trip: trip.status === 'active' ? trip : null } : bus));
+    socket.on('connect', join); socket.on('disconnect', disconnect); socket.on('trip-detail', update);
+    if (socket.connected) join(); else socket.connect();
+    load(); const poll = setInterval(load, 10000), clock = setInterval(() => setNow(Date.now()), 5000);
+    return () => { cancelled = true; clearInterval(poll); clearInterval(clock); socket.off('connect', join); socket.off('disconnect', disconnect); socket.off('trip-detail', update); };
   }, []);
-
-  // Initial center (before first location arrives)
-  const initialCenter = useMemo(
-    () => (location ? [location.lat, location.lng] : [26.1573, 91.8173]), // fallback: your city center
-    [location]
-  );
-
-  // Derived UI strings
-  const isLive = tripStatus === 'started';
-  const statusLine =
-    tripStatus === 'started'
-      ? 'Your trip has started'
-      : tripStatus === 'ended'
-      ? 'Your trip has ended'
-      : 'Waiting for the bus to start…';
-
-  // Click handler for the "Center on bus" button
-  const centerOnBus = () => {
-    if (mapRef && location) {
-      mapRef.flyTo([location.lat, location.lng], 16, { animate: true, duration: 0.5 });
-    }
-  };
-
-  return (
-    <div className="p-8">
-      {/* Header + Live/Offline pill (from tripStatus) */}
-      <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Live Trip Tracking</h2>
-        <span
-          className={`text-sm px-2 py-0.5 rounded ${
-            isLive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-          }`}
-          title={connected ? 'Socket connected' : 'Socket disconnected'}
-        >
-          {isLive ? 'Live' : 'Offline'}
-        </span>
-      </div>
-
-      {/* Human-readable trip status line */}
-      <p
-        className={`mb-3 ${
-          isLive ? 'text-green-700' : tripStatus === 'ended' ? 'text-red-700' : 'text-gray-600'
-        }`}
-      >
-        {statusLine}
-      </p>
-
-      {/* Hide attribution while prototyping. Re-enable for production/licensing. */}
-      <style>{`.leaflet-control-attribution{display:none !important}`}</style>
-
-      {/* Position the Center button over the map: wrap map in a relative container */}
-      <div className="relative" style={{ height: 500, width: '100%' }}>
-        {/* Re-center button (only when we have a location) */}
-        {location && (
-          <button
-            onClick={centerOnBus}
-            className="absolute top-3 right-3 z-[1000] bg-white/90 hover:bg-white text-sm px-3 py-1.5 rounded shadow border"
-            title="Center on bus"
-          >
-            Center on bus
-          </button>
-        )}
-
-        <MapContainer
-          center={initialCenter}
-          zoom={15}
-          attributionControl={false}
-          style={{ height: '100%', width: '100%', borderRadius: 12, overflow: 'hidden' }}
-        >
-          {/* Grab map instance for the center button */}
-          <MapReady setMapRef={setMapRef} />
-
-          <TileLayer
-            url={`https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`}
-            // attribution='&copy; MapTiler &copy; OpenStreetMap contributors'
-          />
-
-          {/* Draw the route so far */}
-          {path.length > 1 && (
-            <Polyline positions={path} pathOptions={{ color: 'royalblue', weight: 4, opacity: 0.85 }} />
-          )}
-
-          {/* Current bus marker */}
-          {location && (
-            <Marker position={[location.lat, location.lng]}>
-              <Popup>
-                <div className="text-sm">
-                  <div><strong>Bus location</strong></div>
-                  <div>Lat: {location.lat.toFixed(6)}</div>
-                  <div>Lng: {location.lng.toFixed(6)}</div>
-                  <div>Updated: {new Date().toLocaleTimeString()}</div>
-                </div>
-              </Popup>
-            </Marker>
-          )}
-        </MapContainer>
-      </div>
-    </div>
-  );
-};
-
-export default Trips;
+  useEffect(() => { if (!selected) return; socket.emit('joinBusRoom', { busId: selected }); return () => socket.emit('leaveBusRoom', { busId: selected }); }, [selected]);
+  const bus = buses.find(b => b.id === selected), trip = bus?.trip;
+  const stale = trip && (!trip.lastLocationUpdatedAt || now - Date.parse(trip.lastLocationUpdatedAt) > 30000);
+  return <main className="routes-workspace"><header className="route-header"><div><h1>Live trips</h1><p>Monitor each bus, its next stop, and route progress.</p></div><span className={`route-badge ${connected ? '' : 'warn'}`}>{connected ? 'Live connection' : 'Reconnecting · periodic updates active'}</span></header>{error && <div className="route-error" role="alert">{error}</div>}{loading && <div className="route-card" role="status">Loading buses…</div>}
+    <div className="route-grid">{buses.map(b => <button key={b.id} aria-pressed={selected === b.id} onClick={() => setSelected(b.id)}><strong>{b.busNumber}</strong><small>{b.trip ? b.trip.direction === 'TO_SCHOOL' ? 'Morning Pickup' : 'Return Drop-off' : 'Not started'}</small><span className="route-badge">{b.trip ? `${b.trip.nextStopIndex}/${b.trip.totalStopCount} stops completed` : 'Waiting'}</span><small>{b.driver?.fullName || 'Driver not assigned'}</small></button>)}</div>
+    {!loading && !buses.length && <div className="route-card">Your buses will appear here once they are added.</div>}
+    {bus && !trip && <div className="route-card"><h2>{bus.busNumber}</h2><p>This bus has not started a trip.</p></div>}
+    {trip && <div className="route-split"><section className="route-card"><div className="route-row"><h2>{bus.busNumber} · {trip.direction === 'TO_SCHOOL' ? 'Morning Pickup' : 'Return Drop-off'}</h2><span className="route-badge">{trip.mode === 'route' ? `Route v${trip.routePlanVersion}` : 'Live tracking only'}</span></div>{stale && <p className="route-error">Location is stale. The driver may be offline.</p>}{(trip.offRoute || trip.routeState === 'rerouting') && <p className="route-error">Bus route is being recalculated.</p>}<RouteMap stops={trip.stops || []} school={trip.schoolLocation} bus={trip.currentLocation} remainingPolyline={trip.remainingPolyline} completedPolyline={trip.completedPolyline} plannedPolyline={trip.plannedPolyline} /><p className="route-muted">Last update: {trip.lastLocationUpdatedAt ? new Date(trip.lastLocationUpdatedAt).toLocaleTimeString() : 'Waiting for GPS'}</p></section><section className="route-card"><h2>Trip progress</h2><p>Driver: {bus.driver?.fullName || 'Assigned driver'}</p><div className="route-stat">{trip.remainingStopCount} stops remaining</div><p>Next: {trip.nextStop?.name || (trip.direction === 'TO_SCHOOL' ? 'School' : 'Route complete')}</p><p>{trip.direction === 'TO_SCHOOL' ? 'School' : 'Final stop'} arrival: {!stale && trip.terminalEta ? new Date(trip.terminalEta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Unavailable'}</p><ol className="route-list route-list-scroll">{(trip.stops || []).map((stop, index) => <li key={stop.routeStopId}><span className="stop-number">{index + 1}</span><div className="stop-text"><strong>{stop.name}</strong><small>{stop.students?.map(s => s.name).join(', ')}</small><span className="route-badge">{stop.status}</span>{stop.skipReason && <small>{stop.skipReason}</small>}</div></li>)}</ol></section></div>}
+  </main>;
+}

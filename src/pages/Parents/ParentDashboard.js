@@ -83,15 +83,9 @@ export default function ParentDashboard() {
   useEffect(() => {
     if (!busId) return;
 
-    if (socket.connected) {
-      socket.emit('joinBusRoom', { busId });
-    }
-
-    socket.on('connect', () => {
-      socket.emit('joinBusRoom', { busId });
-    });
-
-    socket.on('location-update', ({ busId: id, lat, lng }) => {
+    const onConnect = () => setConnected(true);
+    const onDisconnect = () => setConnected(false);
+    const onLocation = ({ busId: id, lat, lng }) => {
       if (String(id) !== String(busId)) return;
 
       const newLoc = { lat: Number(lat), lng: Number(lng) };
@@ -99,15 +93,24 @@ export default function ParentDashboard() {
       setLocation(newLoc);
       setTrail(prev => [...prev.slice(-500), newLoc]);
       setTripStatus('started');
-    });
+    };
 
-    socket.on('tripStatus', (msg) => {
+    const onTripStatus = (msg) => {
       if (String(msg.busId) !== String(busId)) return;
       setTripStatus(msg.status);
-    });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('location-update', onLocation);
+    socket.on('tripStatus', onTripStatus);
+    if (!socket.connected) socket.connect();
 
     return () => {
-      socket.emit('leaveBusRoom', { busId });
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('location-update', onLocation);
+      socket.off('tripStatus', onTripStatus);
     };
 
   }, [busId]);
@@ -147,9 +150,8 @@ export default function ParentDashboard() {
 
     try {
       await parentAPI.setLocation(selectedLocation);
-      alert("Location saved!");
+      alert("Pickup request submitted for school review.");
       setShowLocationModal(false);
-      setSavedPickup(selectedLocation);
     } catch (err) {
       console.error(err);
     }
@@ -206,7 +208,7 @@ export default function ParentDashboard() {
           onClick={() => setShowLocationModal(true)}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
         >
-          Set Pickup Location
+          Request Pickup Location
         </button>
 
         <a

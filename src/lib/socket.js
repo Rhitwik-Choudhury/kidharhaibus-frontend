@@ -24,12 +24,16 @@ const SOCKET_URL =
  * - path: only set if you changed it on the server (default is "/socket.io").
  */
 const socket = io(SOCKET_URL, {
-  transports: ['websocket'], // ← removed on purpose to allow polling → websocket upgrade
+  auth: callback =>
+    callback({
+      token: localStorage.getItem('kidharhaibus_token') || '',
+    }),
+  autoConnect: false,
+  transports: ['websocket', 'polling'],
   withCredentials: true,
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
-  // path: '/socket.io', // uncomment only if you customized it server-side
 });
 
 export default socket;

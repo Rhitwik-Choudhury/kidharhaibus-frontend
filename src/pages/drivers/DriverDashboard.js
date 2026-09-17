@@ -174,6 +174,8 @@ const DriverDashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (!socket.connected) socket.connect();
+
     socket.on("connect", () => {
       console.log("✅ Driver socket connected");
     });

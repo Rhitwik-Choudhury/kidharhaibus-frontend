@@ -8,6 +8,7 @@ import Students from './Students';
 import Drivers from './Drivers';
 import Buses from './Buses';
 import Trips from './Trips';
+import RoutesStops from './RoutesStops';
 import Alerts from './Alerts';
 
 const schoolRoutes = (
@@ -16,6 +17,7 @@ const schoolRoutes = (
     <Route path="students" element={<Students />} />
     <Route path="drivers" element={<Drivers />} />
     <Route path="buses" element={<Buses />} />
+    <Route path="routes" element={<RoutesStops />} />
     <Route path="trips" element={<Trips />} />
     <Route path="alerts" element={<Alerts />} />
     <Route index element={<Navigate to="dashboard" />} />
