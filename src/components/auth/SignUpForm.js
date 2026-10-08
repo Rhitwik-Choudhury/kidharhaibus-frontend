@@ -155,7 +155,7 @@ const SignUpForm = ({ role }) => {
     });
     return;
   }
-  if (role === 'parent' && !formData.phone) {
+  if ((role === 'parent' || role === 'driver') && !/^\d{10}$/.test(formData.phone)) {
     toast({
       title: "Phone required",
       description: "Please enter phone number",
@@ -197,6 +197,7 @@ const SignUpForm = ({ role }) => {
         break;
       }
       case 'driver': {
+        userData.phone = formData.phone;
         userData.fullName = formData.fullName;
         userData.driverCode = formData.driverCode;
         break;
@@ -331,6 +332,7 @@ const SignUpForm = ({ role }) => {
         </div>
       )}
 
+      {role === 'driver' && <div><label className="block text-sm font-medium text-gray-700 mb-2">Driver Phone Number *</label><Input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxLength={10} className="h-12" /></div>}
       {/* Email + OTP */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -510,3 +512,4 @@ const SignUpForm = ({ role }) => {
 };
 
 export default SignUpForm;
+

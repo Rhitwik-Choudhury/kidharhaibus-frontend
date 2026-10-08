@@ -115,6 +115,7 @@ export const busesAPI = {
 };
 
 export const driversAPI = {
+  updateContact: (driverId, phone) => apiClient.patch(`/driver/${driverId}/contact`, { phone }),
   getDrivers: (schoolId) =>
     apiClient.get("/driver/all", { params: { schoolId } }),
   createDriver: (driverData) =>
